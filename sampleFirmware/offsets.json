@@ -1,0 +1,5 @@
+{
+    "bootloader.bin": 0,
+    "partitions.bin": 32768,
+    "firmware.bin": 65536
+}

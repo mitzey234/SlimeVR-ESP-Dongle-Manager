@@ -1,0 +1,63 @@
+{
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
+    "@tailwindcss/cli": "^4.1.18",
+    "electron": "^40.1.0",
+    "tailwindcss": "^4.1.18"
+  },
+  "name": "slimevr-esp-dongle-manager",
+  "version": "0.0.1",
+  "description": "This is a electron based application to help manage and control the firmware on an ESP based tracker dongle",
+  "main": "main.js",
+  "dependencies": {
+    "detect-libc": "^2.1.2",
+    "electron-squirrel-startup": "^1.0.1",
+    "enhanced-resolve": "^5.19.0",
+    "esptool-js": "^0.5.7",
+    "graceful-fs": "^4.2.11",
+    "is-extglob": "^2.1.1",
+    "is-glob": "^4.0.3",
+    "jiti": "^2.6.1",
+    "lightningcss": "^1.30.2",
+    "lightningcss-win32-x64-msvc": "^1.30.2",
+    "magic-string": "^0.30.21",
+    "mri": "^1.2.0",
+    "node-addon-api": "^7.1.1",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.3",
+    "serialport": "^13.0.0",
+    "source-map-js": "^1.2.1",
+    "tapable": "^2.3.0",
+    "unzipper": "^0.12.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron-forge start",
+    "watch": "npx @tailwindcss/cli -i index.css -o styles/output.css --watch",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mitzey234/SlimeVR-ESP-Dongle-Manager.git"
+  },
+  "keywords": [
+    "slime-vr",
+    "esp32",
+    "donlge",
+    "hid"
+  ],
+  "author": "Mitzey",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mitzey234/SlimeVR-ESP-Dongle-Manager/issues"
+  },
+  "homepage": "https://github.com/mitzey234/SlimeVR-ESP-Dongle-Manager#readme"
+}
