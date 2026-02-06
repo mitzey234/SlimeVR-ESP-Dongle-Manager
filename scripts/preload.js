@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('webUtils', webUtils);
 
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: (filters, properties) => ipcRenderer.invoke('dialog:openFile', filters, properties),
-  flashEsp: (firmwarePath) => ipcRenderer.invoke('esp:flash', firmwarePath)
+  readFirmwareArchive: (firmwarePath) => ipcRenderer.invoke('firmware:readArchive', firmwarePath)
 })
 
 window.addEventListener('DOMContentLoaded', () => {

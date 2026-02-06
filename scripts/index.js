@@ -2,14 +2,155 @@ const connectButton = document.getElementById('connect-serial');
 const statusEl = document.getElementById('serial-status');
 const firmwareInput = document.getElementById('firmwareInput');
 
+// Utility functions imported from esptool module
+let toHex, formatMacAddr, sleep, currentChipName, currentMacAddr, espStub;
+
+(async () => {
+    /** @type import("./esptool/index.js") */
+    window.esptoolPackage = await import("./esptool.js");
+    toHex = window.esptoolPackage.toHex;
+    formatMacAddr = window.esptoolPackage.formatMacAddr;
+    sleep = window.esptoolPackage.sleep;
+    console.log('ESPLoader module loaded:', window.esptoolPackage);
+})();
+
+function logMsg(...args) {
+    console.log(...args);
+    statusEl.innerText += args.join(' ') + '\n';
+}
+
+function debugMsg(...args) {
+    console.debug(...args);
+    statusEl.innerText += args.join(' ') + '\n';
+}
+
+function errorMsg(...args) {
+    console.error(...args);
+    statusEl.innerText += args.join(' ') + '\n';
+}
+
+/**
+ * Parse flash size string (e.g., "256KB", "4MB") to bytes
+ * @param {string} sizeStr - Flash size string with unit (KB or MB)
+ * @returns {number} Size in bytes
+ */
+function parseFlashSize(sizeStr) {
+  if (!sizeStr || typeof sizeStr !== 'string') {
+    return 0;
+  }
+  
+  // Extract number and unit
+  const match = sizeStr.match(/^(\d+)(KB|MB)$/i);
+  if (!match) {
+    // If no unit, assume it's already in MB (legacy behavior)
+    const num = parseInt(sizeStr);
+    return isNaN(num) ? 0 : num * 1024 * 1024;
+  }
+  
+  const value = parseInt(match[1]);
+  const unit = match[2].toUpperCase();
+  
+  if (unit === 'KB') {
+    return value * 1024; // KB to bytes
+  } else if (unit === 'MB') {
+    return value * 1024 * 1024; // MB to bytes
+  }
+  
+  return 0;
+}
+
 firmwareInput.onclick = async (event) => {
     const filePath = await window.electronAPI.openFile([{ name: 'Compressed', extensions: ['zip'] }], ['openFile', 'dontAddToRecent']);
     console.log('Firmware loaded:', filePath);
     statusEl.innerText = `Selected firmware: ${filePath}`;
-    const result = await window.electronAPI.flashEsp(filePath);
-    if (result === true) {
-        statusEl.innerText += `\nFirmware flashed successfully.`;
+    const result = await window.electronAPI.readFirmwareArchive(filePath);
+    console.log('Firmware read result:', result);
+    if (typeof result === 'number') {
+        statusEl.innerText = `Error reading firmware: ${result}`;
     } else {
-        statusEl.innerText += `\nFirmware flashing failed with code: ${result}`;
+        statusEl.innerText = `Firmware loaded successfully: ${result.files.length} files found.`;
     }
+
+    const esploaderMod = window.esptoolPackage;
+    let esploader;
+
+    let ports = await navigator.serial.getPorts();
+    let port = ports[0];
+    if (!port) {
+        errorMsg('No serial ports found. Please connect your ESP device and try again.');
+        return;
+    }
+    try {
+        await port.open({ baudRate: 115200 });
+    } catch (err) {
+        errorMsg('Failed to open serial port:', err);
+        return;
+    }
+
+    // Only open if not already open (requestSerialPort may return an opened port)
+    if (!port.readable || !port.writable) {
+        await port.open({ baudRate: ESP_ROM_BAUD });
+    }
+
+    console.log('[Connect] Using Web Serial for Desktop');
+    esploader = new window.esptoolPackage.ESPLoader(port, {
+        log: (...args) => logMsg(...args),
+        debug: (...args) => debugMsg(...args),
+        error: (...args) => errorMsg(...args),
+    });
+
+    try {
+        await esploader.initialize();
+    } catch (err) {
+        // If ESP32-S2 reconnect is in progress (handled by event listener), suppress the error
+        if (esp32s2ReconnectInProgress) {
+            logMsg("Initialization interrupted for ESP32-S2 reconnection.");
+            return;
+        }
+
+        // Not ESP32-S2 or other error
+        try {
+            await esploader.disconnect();
+        } catch (disconnectErr) {
+            // Ignore disconnect errors
+        }
+        throw err;
+    }
+
+    logMsg("Connected to " + esploader.chipName);
+    logMsg("MAC Address: " + formatMacAddr(esploader.macAddr()));
+
+    // Store chip info globally
+    currentChipName = esploader.chipName;
+    currentMacAddr = formatMacAddr(esploader.macAddr());
+
+    espStub = await esploader.runStub();
+
+    // Set detected flash size in the read size field
+    if (espStub.flashSize) {
+        const flashSizeBytes = parseFlashSize(espStub.flashSize);
+        logMsg(`Detected flash size: ${espStub.flashSize} (${flashSizeBytes} bytes)`);
+    }
+
+    // Set the selected baud rate
+    await espStub.setBaudrate(921600);
+
+    // Store disconnect handler so we can remove it later
+    const handleDisconnect = () => {
+        logMsg("Device disconnected");
+        espStub = false;
+    };
+    espStub.handleDisconnect = handleDisconnect; // Store reference on espStub
+    espStub.addEventListener("disconnect", handleDisconnect);
+    
+    for (let i in result.files) {
+        let file = result.files[i];
+        logMsg(`File: ${i}, Offset: ${file.offset}`, file);
+        let offsetOverride;
+        if (i == "bootloader.bin") offsetOverride = espStub.getBootloaderOffset();
+        await espStub.flashData(file.data, (bytesWritten, totalBytes) => logMsg(bytesWritten, totalBytes), offsetOverride || file.offset, true);
+    }
+
+    await espStub.enterConsoleMode();
+    
 };
