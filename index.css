@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+body {
+    background-image: url(../background.png);
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.draggable {
+    -webkit-app-region: drag;
+}
+
+#titleBar {
+    -webkit-app-region: drag;
+}
+
+#titleBar button {
+    -webkit-app-region: no-drag;
+}
+
+.force-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%)
+}
+
+.hideScrolls::-webkit-scrollbar {
+    display: none;
+}
+
+.hideScrolls {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

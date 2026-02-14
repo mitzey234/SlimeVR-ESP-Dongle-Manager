@@ -1,20 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html class="h-full w-full">
 <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title id="pageTitle"></title>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <link rel="stylesheet" type="text/css" href="styles/output.css">
+    <link rel="stylesheet" type="text/css" href="styles/all.min.css">
 </head>
-<body>
-    <h1>Hello World!</h1>
-    <p>
-        We are using Node.js <span id="node-version"></span>,
-        Chromium <span id="chrome-version"></span>,
-        and Electron <span id="electron-version"></span>.
-    </p>
-    <button id="firmwareInput" type="button">Select Firmware</button>
-    <pre id="serial-status"></pre>
+<body class="flex flex-col bg-neutral-900 text-white h-full w-full overflow-hidden">
+    <div id="overlay" class="flex items-center justify-center flex-col z-50 transition duration-200 ease-in-out draggable fixed w-full h-full bg-neutral-800">
+        <i class="text-6xl fa-solid fa-gear fa-spin-pulse mb-3"></i>
+        <span id="loadingText" class="text-2xl"></span>
+    </div>
+    <div id="titleBar" class="flex w-full h-6 bg-neutral-600 flex-row pl-2 text-white/75 select-none">
+        <span id="appTitle" class="grow text-start text-white/90 truncate"></span>
+        <button title="Developer Tools" id="devTools-btn" class="transition duration-200 ease-in-out hidden px-1 w-fit h-full hover:bg-neutral-700 active:bg-neutral-900 cursor-pointer hover:text-white"><i class="fas fa-tools"></i></button>
+        <button title="Refresh" id="refresh-btn" class="transition duration-200 ease-in-out hidden px-1 w-fit h-full hover:bg-neutral-700 active:bg-neutral-900 cursor-pointer hover:text-white"><i class="fas fa-sync-alt"></i></button>
+        <button title="Updates available" id="update-btn" class="transition duration-200 ease-in-out hidden px-1 w-fit h-full bg-green-500 hover:bg-green-700 active:bg-green-900 cursor-pointer hover:text-white"><i class="fas fa-download"></i></button>
+        <button title="Minimize" id="minimize-btn" class="transition duration-200 ease-in-out px-1 w-fit h-full hover:bg-neutral-700 active:bg-neutral-900 cursor-pointer hover:text-white"><i class="fas fa-minus"></i></button>
+        <button title="Maximize" id="maximize-btn" class="transition duration-200 ease-in-out px-1 w-fit h-full hover:bg-neutral-700 active:bg-neutral-900 cursor-pointer hover:text-white"><i class="fas fa-square"></i></button>
+        <button title="Close" id="close-btn" class="transition duration-200 ease-in-out px-1 w-fit h-full hover:bg-red-500 active:bg-red-700 cursor-pointer hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="deviceSelector" class="flex flex-row h-36 w-full rounded-b-2xl backdrop-blur-sm overflow-x-scroll overflow-y-hidden hideScrolls shrink-0">
+        <div id="noDevice" class="shrink-0 select-none flex flex-col self-center items-center bg-black/50 rounded-lg w-fit p-4 backdrop-blur-lg force-center transition duration-200 ease-in-out">
+            <span class="text-2xl text-white/80">No Devices Detected</span>
+            <a id="showHiddenDevices" class="text-blue-500 hover:text-blue-700 active:text-blue-900 cursor-pointer">Show <span id="hiddenDeviceCount"></span> hidden devices</a>
+        </div>
+        <div id="hiddenDevicesToggle" class="shrink-0 h-full px-2 hover:bg-black/20 active:bg-black/40 transition duration-200 ease-in-out flex flex-col items-center justify-center cursor-pointer select-none">
+            <i class="fa-solid fa-angle-right"></i>
+        </div>
+    </div>
+    <div id="contentContainer" class="flex flex-col p-4 h-full place-content-center">
+        <div id="noDeviceSelectedContent" class="flex flex-col force-center items-center select-none bg-black/50 rounded-lg w-fit p-4 backdrop-blur-lg transition duration-200 ease-in-out">
+            <i class="fa-solid fa-arrow-up-long text-6xl mb-3 mt-2"></i>
+            <h1 class="text-3xl text-center text-white/80">No Device Selected</h1>
+            <p class="text-center text-white/60 mt-2">Please select a device from the list above to view details and manage it.</p>
+        </div>
+    </div>
 </body>
 <script type="module" src="./scripts/index.js"></script>
 </html>

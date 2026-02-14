@@ -1,65 +1,22 @@
-const connectButton = document.getElementById('connect-serial');
-const statusEl = document.getElementById('serial-status');
-const firmwareInput = document.getElementById('firmwareInput');
+let loadingText = document.getElementById('loadingText');
+let Main;
 
-// Utility functions imported from esptool module
-let toHex, formatMacAddr, sleep, currentChipName, currentMacAddr, espStub;
+let loadingMessages = ["Spinning Gears...", "Loading Modules...", "Almost There...", "Just a Moment...", "Preparing the Magic...", "Warming Up the ESPs...", "Calibrating the Dongle...", "Summoning the Code..."];
+
+loadingText.innerText = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+setInterval(() => {
+    loadingText.innerText = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+}, 5000);
 
 (async () => {
-    /** @type import("./esptool/index.js") */
-    window.esptoolPackage = await import("./esptool.js");
-    toHex = window.esptoolPackage.toHex;
-    formatMacAddr = window.esptoolPackage.formatMacAddr;
-    sleep = window.esptoolPackage.sleep;
-    console.log('ESPLoader module loaded:', window.esptoolPackage);
+    Main = (await import("./classes/main.js")).default;
+    let main = new Main();
+    await main.waitForReady();
+    console.log('Core class ready:', main);
 })();
 
-function logMsg(...args) {
-    console.log(...args);
-    statusEl.innerText += args.join(' ') + '\n';
-}
 
-function debugMsg(...args) {
-    console.debug(...args);
-    statusEl.innerText += args.join(' ') + '\n';
-}
-
-function errorMsg(...args) {
-    console.error(...args);
-    statusEl.innerText += args.join(' ') + '\n';
-}
-
-/**
- * Parse flash size string (e.g., "256KB", "4MB") to bytes
- * @param {string} sizeStr - Flash size string with unit (KB or MB)
- * @returns {number} Size in bytes
- */
-function parseFlashSize(sizeStr) {
-  if (!sizeStr || typeof sizeStr !== 'string') {
-    return 0;
-  }
-  
-  // Extract number and unit
-  const match = sizeStr.match(/^(\d+)(KB|MB)$/i);
-  if (!match) {
-    // If no unit, assume it's already in MB (legacy behavior)
-    const num = parseInt(sizeStr);
-    return isNaN(num) ? 0 : num * 1024 * 1024;
-  }
-  
-  const value = parseInt(match[1]);
-  const unit = match[2].toUpperCase();
-  
-  if (unit === 'KB') {
-    return value * 1024; // KB to bytes
-  } else if (unit === 'MB') {
-    return value * 1024 * 1024; // MB to bytes
-  }
-  
-  return 0;
-}
-
-firmwareInput.onclick = async (event) => {
+async function flash (event) {
     const filePath = await window.electronAPI.openFile([{ name: 'Compressed', extensions: ['zip'] }], ['openFile', 'dontAddToRecent']);
     console.log('Firmware loaded:', filePath);
     statusEl.innerText = `Selected firmware: ${filePath}`;
@@ -152,5 +109,4 @@ firmwareInput.onclick = async (event) => {
     }
 
     await espStub.enterConsoleMode();
-    
 };

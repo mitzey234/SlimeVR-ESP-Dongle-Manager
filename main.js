@@ -1,11 +1,37 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron/main');
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron/main');
 const path = require('node:path');
 const Firmware = require('./classes/Firmware.js');
+const inspector = require('inspector');
+
+function isInspectorRunning() {
+  return inspector.url() !== undefined;
+}
+
+function isDebuggerAttached() {
+  const execArgv = process.argv || [];
+  const hasInspectFlag = execArgv.some((arg) =>
+    arg.startsWith('--inspect') ||
+    arg.startsWith('--inspect-brk') ||
+    arg.startsWith('--remote-debugging-port') ||
+    arg.startsWith('--debug')
+  );
+
+  return hasInspectFlag || isInspectorRunning();
+}
+
+const DEBUG = isDebuggerAttached();
+
+if (DEBUG) console.log('Debugger detected, enabling debug mode');
+
+Menu.setApplicationMenu(null);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    titleBarStyle: "hidden",
+    width: 1600,
+    height: 1000,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
     }
@@ -28,7 +54,8 @@ function createWindow() {
   })
 
   mainWindow.loadFile('index.html')
-  mainWindow.webContents.openDevTools()
+  if (DEBUG) mainWindow.webContents.openDevTools()
+  return mainWindow;
 }
 
 async function handleFileOpen(event, filters, properties) {
@@ -37,22 +64,6 @@ async function handleFileOpen(event, filters, properties) {
     return filePaths[0]
   }
 }
-
-app.whenReady().then(() => {
-  createWindow()
-
-  ipcMain.handle('dialog:openFile', handleFileOpen)
-
-  ipcMain.handle('firmware:readArchive', readFirmwareArchive)
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
-
-app.on('window-all-closed', () => {
-  app.quit()
-})
 
 async function readFirmwareArchive(event, firmwarePath) {
   let firmware = new Firmware(firmwarePath);
@@ -63,3 +74,58 @@ async function readFirmwareArchive(event, firmwarePath) {
   }
   return firmware;
 }
+
+app.whenReady().then(() => {
+  let window = createWindow();
+
+  ipcMain.handle('dialog:openFile', handleFileOpen)
+
+  ipcMain.handle('firmware:readArchive', readFirmwareArchive)
+
+  ipcMain.handle('window:minimize', () => {
+    window.minimize();
+  })
+
+  ipcMain.handle('window:maximize', () => {
+    if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
+  })
+
+  ipcMain.handle('app:version', () => {
+    return app.getVersion();
+  })
+
+  ipcMain.handle('window:close', () => {
+    window.close();
+  })
+
+  ipcMain.handle('window:devTools', () => {
+    window.webContents.isDevToolsOpened() ? window.webContents.closeDevTools() : window.webContents.openDevTools();
+  });
+
+  ipcMain.handle('app:update', () => {
+    // Placeholder for update logic
+    console.log('Update button clicked');
+  });
+
+  ipcMain.handle('app:checkForUpdates', async () => {
+    // Placeholder for check for updates logic
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async update check
+    console.log('Check for updates triggered');
+  });
+
+  ipcMain.handle('app:DEBUG', () => {
+    return DEBUG;
+  });
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('window-all-closed', () => {
+  app.quit()
+})
