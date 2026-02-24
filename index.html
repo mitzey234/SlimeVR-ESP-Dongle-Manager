@@ -11,6 +11,7 @@
     <div id="overlay" class="flex items-center justify-center flex-col z-50 transition duration-200 ease-in-out draggable fixed w-full h-full bg-neutral-800">
         <i class="text-6xl fa-solid fa-gear fa-spin-pulse mb-3"></i>
         <span id="loadingText" class="text-2xl"></span>
+        <span id="loadingTooLongText" class="text-white/60 mt-2 hidden select-none">This is taking a while, click <a id="reloadLink" class="text-blue-500 hover:text-blue-700 active:text-blue-900 cursor-pointer">here</a> to reload</span>
     </div>
     <div id="titleBar" class="flex w-full h-6 bg-neutral-600 flex-row pl-2 text-white/75 select-none">
         <span id="appTitle" class="grow text-start text-white/90 truncate"></span>
@@ -30,7 +31,7 @@
             <i class="fa-solid fa-angle-right"></i>
         </div>
     </div>
-    <div id="contentContainer" class="flex flex-col p-4 h-full place-content-center">
+    <div id="contentContainer" class="flex flex-col p-4 h-full place-content-center overflow-hidden">
         <div id="noDeviceSelectedContent" class="flex flex-col force-center items-center select-none bg-black/50 rounded-lg w-fit p-4 backdrop-blur-lg transition duration-200 ease-in-out">
             <i class="fa-solid fa-arrow-up-long text-6xl mb-3 mt-2"></i>
             <h1 class="text-3xl text-center text-white/80">No Device Selected</h1>

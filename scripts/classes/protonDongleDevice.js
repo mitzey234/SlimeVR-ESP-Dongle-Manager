@@ -3,11 +3,6 @@ import DongleManager from "./dongleManager.js";
 
 class ProtonDongleDevice extends SerialDevice {
     trackers = new Map();
-    
-    _pairing = false;
-    get pairing() {
-        return this._pairing;
-    }
 
     constructor(mainInstance, port) {
         super(mainInstance, port, "SlimeVR Dongle");
@@ -24,6 +19,10 @@ class ProtonDongleDevice extends SerialDevice {
 
     enterDFU() {
 
+    }
+
+    togglePairingMode() {
+        //TODO: Implement this when I add the pairing mode toggle button in the UI
     }
 }
 

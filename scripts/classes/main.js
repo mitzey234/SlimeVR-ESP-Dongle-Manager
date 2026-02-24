@@ -36,6 +36,8 @@ class Main {
     /** @type {ElectronAPI} */
     electronAPI;
 
+    consolePrefix = "[SC]";
+
     /** @type {SerialDevice} */
     _currentDevice = null;
 
@@ -52,9 +54,17 @@ class Main {
      */
     set currentDevice (device) {
         if (this._currentDevice === device) return;
-        if (this._currentDevice != null) this._currentDevice.active = false;
+        if (this._currentDevice != null) {
+            this._currentDevice.active = false;
+            if (this._currentDevice.manager.disconnected) {
+                this._currentDevice.manager.element.remove();
+            }
+        }
         this._currentDevice = device;
-        device.active = true;
+        if (device != null) {
+            device.active = true;
+            device.manager.onSwitch();
+        }
         this.updatePageTitle();
         if (device) {
             noDeviceSelectedContent.classList.add('opacity-0', 'pointer-events-none');

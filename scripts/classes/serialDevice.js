@@ -9,6 +9,9 @@ class SerialDevice {
     /** @type {import("./manager.js")["default"]["prototype"]} */
     manager;
 
+    /** @type {SerialPort} */
+    port;
+
     _name = "Unknown Device";
 
     _active = false;
@@ -39,6 +42,7 @@ class SerialDevice {
     set name(value) {
         if (this._name === value) return;
         this._name = value;
+        this.deviceElement.nameElement.innerText = value;
         //Update stuff here
     }
 
@@ -49,6 +53,7 @@ class SerialDevice {
         if (port.connected) this.main.serialDevices.set(this.id, this);
         this.port.addEventListener('disconnect', this.onDisconnected.bind(this));
         let element = new DeviceElement(this);
+        this.deviceElement = element;
         this.element = element.element;
         this.main.deviceContainerElement.appendChild(this.element);
         this.main.updateHiddenDeviceCount();
@@ -63,6 +68,8 @@ class SerialDevice {
         this.main.updateHiddenDeviceCount();
         this.main.updateDeviceListPrompt();
         this.main.sortDevices();
+        this.manager.disconnected = true;
+        if (!this.active) this.manager.element.remove();
     }
 }
 

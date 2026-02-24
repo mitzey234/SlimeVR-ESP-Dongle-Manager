@@ -30,7 +30,7 @@ function createWindow() {
     titleBarStyle: "hidden",
     width: 1600,
     height: 1000,
-    minWidth: 800,
+    minWidth: 1080,
     minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
