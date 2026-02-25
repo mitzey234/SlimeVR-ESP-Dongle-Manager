@@ -12,9 +12,13 @@ let types = {
     ALL_TRACKERS_UNPAIRED: 10,
     DATA_RATE_UPDATE: 11, 
     UPDATE_CHANNEL: 12,
+    TRACKER_UPDATE: 13,
 }
 
 import InitMessage from "./initMessage.js";
+import TrackerConnectedMessage from "./trackerConnectedMessage.js";
+import TrackerDisconnectedMessage from "./trackerDisconnectedMessage.js";
+import TrackerUpdateMessage from "./trackerUpdateMessage.js";
 
 class SerialComParser {
     types = types;
@@ -28,6 +32,18 @@ class SerialComParser {
                 let message = new InitMessage(messageData);
                 message.type = messageType;
                 return message;
+            case types.TRACKER_CONNECTED:
+                let trackerConnectedMessage = new TrackerConnectedMessage(messageData);
+                trackerConnectedMessage.type = messageType;
+                return trackerConnectedMessage;
+            case types.TRACKER_DISCONNECTED:
+                let trackerDisconnectedMessage = new TrackerDisconnectedMessage(messageData);
+                trackerDisconnectedMessage.type = messageType;
+                return trackerDisconnectedMessage;
+            case types.TRACKER_UPDATE:
+                let trackerUpdateMessage = new TrackerUpdateMessage(messageData);
+                trackerUpdateMessage.type = messageType;
+                return trackerUpdateMessage;
             default:
                 console.warn("Received unknown message type:", messageType);
                 return null;

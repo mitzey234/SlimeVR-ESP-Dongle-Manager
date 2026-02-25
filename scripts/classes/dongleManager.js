@@ -2,11 +2,13 @@ import Manager from "./manager.js";
 import SerialComParser from "./messages/serialComParser.js";
 import Terminal from "./terminal.js";
 import DongleContainer from "./dongleContainer.js";
+import SocketComHandler from "./messages/socketComHandler.js";
 
 class DongleManager extends Manager {
     connectTimeout;
 
     parser = new SerialComParser(this);
+    socketComHandler = new SocketComHandler(this);
 
     _pairing = false;
     get pairing() {
@@ -65,7 +67,6 @@ class DongleManager extends Manager {
     async connect () {
         await super.connect();
         this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
-        this.element.addEventListener('socket-com', this.handleSocketComInit.bind(this));
         let result = await this.sendCommand('SCInit');
         if (!result) {
             this.connecting = false;
@@ -78,30 +79,47 @@ class DongleManager extends Manager {
     }
 
     /**
-     * @param {{detail: Array<number>}} d
+     * @param {import("./messages/initMessage.js").default} message
      */
-    handleSocketComInit (d) {
-        let message;
-        try {
-            message = this.parser.parse(d.detail);
-        } catch (error) {
-            console.error('Failed to parse initialization message from dongle:', error, 'Data:', d);
-            this.connectingError = "Failed to parse initialization message from the dongle: " + error.message;
-            this.element.removeEventListener('socket-com', this.handleSocketComInit.bind(this));
-            return;
-        }
-        if (message.type !== this.parser.types.IDENT) {
-            console.error('Received non-initialization message during initialization:', message);
-            clearTimeout(this.connectTimeout);
-            this.element.removeEventListener('socket-com', this.handleSocketComInit.bind(this));
-            return;
-        }
+    handleInit (message) {
         clearTimeout(this.connectTimeout);
-        this.element.removeEventListener('socket-com', this.handleSocketComInit.bind(this));
         this.device.deviceElement.status = "connected";
         this.overlay = false;
+        this.connected = true;
         console.log('Dongle initialized successfully', message);
         this.dongleContainer.init(message);
+    }
+
+    /**
+     * @param {import("./messages/trackerConnectedMessage.js").default} message
+     */
+    handleTrackerConnected (message) {
+        console.log('Tracker connected:', message);
+        this.dongleContainer.addTracker(message.tracker);
+    }
+
+    /**
+     * @param {import("./messages/trackerDisconnectedMessage.js").default} message
+     */
+    handleTrackerDisconnected (message) {
+        console.log('Tracker disconnected:', message);
+        this.dongleContainer.removeTracker(message.tracker.id);
+    }
+
+    /**
+     * @param {import("./messages/trackerUpdateMessage.js").default} message
+     */
+    handleTrackerUpdate (message) {
+        this.dongleContainer.bytesPerSecond = message.bytesPerSecond;
+        this.dongleContainer.packetsPerSecond = message.packetsPerSecond;
+        //TODO: this.dongleContainer.temperature = message.temperature;
+        message.trackers.forEach(tracker => {
+            this.dongleContainer.updateTracker(tracker);
+        });
+        this.dongleContainer.trackers.forEach(tracker => {
+            let trackerInfo = message.trackers.find(t => t.id === tracker.id);
+            if (!trackerInfo) return this.dongleContainer.removeTracker(tracker.id);
+        });
     }
 
     async onTimeout () {

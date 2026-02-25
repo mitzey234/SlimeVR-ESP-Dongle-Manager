@@ -13,7 +13,7 @@ class DongleContainer {
 
     noTrackersElement = document.createElement('div');
 
-    /** @type {Map<string, Tracker>} */
+    /** @type {Map<string, import("./tracker.js")["default"]["prototype"]>} */
     trackers = new Map();
 
     _firmwareVersion;
@@ -314,6 +314,10 @@ class DongleContainer {
         this.manager.scanningEnvironment = message.scanningEnvironment;
     }
 
+    /**
+     * @param {import("./messages/rawTrackerType.js")["default"]["prototype"]} trackerInfo 
+     * @param {boolean} skipSort 
+     */
     addTracker(trackerInfo, skipSort = false) {
         let tracker = new Tracker(trackerInfo);
         tracker.update = this.updateTrackerList.bind(this);
@@ -321,6 +325,30 @@ class DongleContainer {
         this.trackerListElement.appendChild(tracker.element);
         this.updateTrackerList();
         if (!skipSort) this.sortTrackers();
+    }
+
+    removeTracker(trackerId) {
+        let tracker = this.trackers.get(trackerId);
+        if (tracker) {
+            this.trackers.delete(trackerId);
+            tracker.element.remove();
+            this.updateTrackerList();
+            this.sortTrackers();
+        }
+    }
+
+    /**
+     * @param {import("./messages/rawTrackerType.js")["default"]["prototype"]} trackerInfo 
+     */
+    updateTracker(trackerInfo) {
+        let tracker = this.trackers.get(trackerInfo.id);
+        if (tracker) {
+            tracker.latency = trackerInfo.latency;
+            tracker.rssi = trackerInfo.rssi;
+            tracker.missedPings = trackerInfo.missedPings;
+        } else {
+            this.addTracker(trackerInfo);
+        }
     }
 
     updateTrackerList() {
@@ -337,12 +365,12 @@ class DongleContainer {
             let totalLatency = 0;
             let totalRssi = 0;
             let maxLatency = 0;
-            let maxRssi = -Infinity;
+            let maxRssi = Infinity;
             this.trackers.forEach(tracker => {
                 totalLatency += tracker.latency;
                 totalRssi += tracker.rssi;
                 if (tracker.latency > maxLatency) maxLatency = tracker.latency;
-                if (tracker.rssi > maxRssi) maxRssi = tracker.rssi;
+                if (tracker.rssi < maxRssi) maxRssi = tracker.rssi;
             });
             let averageLatency = totalLatency / this.trackers.size;
             let averageRssi = totalRssi / this.trackers.size;

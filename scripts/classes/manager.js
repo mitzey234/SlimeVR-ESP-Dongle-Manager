@@ -23,6 +23,8 @@ class Manager {
 
     allowSerialCom = false;
 
+    connected = false;
+
     dataBuffer = [];
 
     _overlay = true;
@@ -49,6 +51,7 @@ class Manager {
         if (value && !this.disconnected) {
             this.connectingContainer.classList.remove('opacity-0', 'pointer-events-none');
             this.connectingError = null;
+            this.connected = false;
             this.device.deviceElement.status = "connecting";
         } else {
             this.connectingContainer.classList.add('opacity-0', 'pointer-events-none');
@@ -65,6 +68,7 @@ class Manager {
         if (value != null && !this.disconnected) {
             this.connecting = false;
             this.errorDetails.innerText = value;
+            this.connected = false;
             this.connectingErrorCont.classList.remove('opacity-0', 'pointer-events-none');
             this.device.deviceElement.status = "error";
         } else {
@@ -84,6 +88,7 @@ class Manager {
             this.overlay = true;
             this.connecting = false;
             this.connectingError = null;
+            this.connected = false;
             this.device.deviceElement.status = "disconnected";
             this.disconnectedContainer.classList.remove('opacity-0', 'pointer-events-none');
         } else {
@@ -172,7 +177,7 @@ class Manager {
                         // If line starts with [SC], it's a socket-com message and we should only check for \r\n after the prefix
                         if (this.allowSerialCom && data[0] == 91 && data[1] == 83 && data[2] == 67 && data[3] == 93) {
                             // 13 is the ASCII code for \r, 10 is the ASCII code for \n
-                            if (byte === 10 && data[data.length - 2] === 13) this.handleLine(data.splice(0, data.length));
+                            if (byte === 10 && data[data.length - 2] === 13) this.handleLine(data.splice(0, data.length-2));
                         } else if (byte === 10) this.handleLine(data.splice(0, data.length));
                     });
                 }

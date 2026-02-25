@@ -11,6 +11,7 @@ class SerialComMessage {
      */
     constructor(data) {
         this.data = data;
+        this.dataAsString = String.fromCharCode(...data);
     }
     
     /**
