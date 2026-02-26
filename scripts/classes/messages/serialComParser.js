@@ -19,6 +19,12 @@ import InitMessage from "./initMessage.js";
 import TrackerConnectedMessage from "./trackerConnectedMessage.js";
 import TrackerDisconnectedMessage from "./trackerDisconnectedMessage.js";
 import TrackerUpdateMessage from "./trackerUpdateMessage.js";
+import AllTrackersUnpairedMessage from "./allTrackersUnpairedMessage.js";
+import TrackerUnpairedMessage from "./trackerUnpairedMessage.js";
+import TrackerPairedMessage from "./trackerPairedMessage.js";
+import PairingModeMessage from "./pairingmodeMessage.js";
+import EnvironmentScanModeMessage from "./environmentScanModeMessage.js";
+import EnvironmentScanProgressMessage from "./environmentScanProgressMessage.js";
 
 class SerialComParser {
     types = types;
@@ -44,6 +50,30 @@ class SerialComParser {
                 let trackerUpdateMessage = new TrackerUpdateMessage(messageData);
                 trackerUpdateMessage.type = messageType;
                 return trackerUpdateMessage;
+            case types.ALL_TRACKERS_UNPAIRED:
+                let allTrackersUnpairedMessage = new AllTrackersUnpairedMessage(messageData);
+                allTrackersUnpairedMessage.type = messageType;
+                return allTrackersUnpairedMessage;
+            case types.TRACKER_UNPAIRED:
+                let trackerUnpairedMessage = new TrackerUnpairedMessage(messageData);
+                trackerUnpairedMessage.type = messageType;
+                return trackerUnpairedMessage;
+            case types.TRACKER_PAIRED:
+                let trackerPairedMessage = new TrackerPairedMessage(messageData);
+                trackerPairedMessage.type = messageType;
+                return trackerPairedMessage;
+            case types.PAIRING_MODE:
+                let pairingModeMessage = new PairingModeMessage(messageData);
+                pairingModeMessage.type = messageType;
+                return pairingModeMessage;
+            case types.ENVIRONMENT_SCAN_MODE:
+                let environmentScanModeMessage = new EnvironmentScanModeMessage(messageData);
+                environmentScanModeMessage.type = messageType;
+                return environmentScanModeMessage;
+            case types.ENVIRONMENT_SCAN_PROGRESS:
+                let environmentScanProgressMessage = new EnvironmentScanProgressMessage(messageData);
+                environmentScanProgressMessage.type = messageType;
+                return environmentScanProgressMessage;
             default:
                 console.warn("Received unknown message type:", messageType);
                 return null;

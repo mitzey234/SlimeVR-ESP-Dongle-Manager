@@ -52,12 +52,42 @@ class Tracker {
         }
     }
 
+    /** @type number */
+    _bytesPerSecond;
+    get bytesPerSecond() {
+        return this._bytesPerSecond;
+    }
+
+    set bytesPerSecond(value) {
+        if (this._bytesPerSecond === value) return;
+        this._bytesPerSecond = value;
+        this.bytesPerSecondElement.innerText = `${this._bytesPerSecond} B`;
+        this.bytesPerSecondElement.classList.toggle('text-blue-300/35', this._bytesPerSecond <= 500);
+        this.bytesPerSecondElement.classList.toggle('text-blue-300/75', this._bytesPerSecond > 500 && this._bytesPerSecond <= 1000);
+        this.bytesPerSecondElement.classList.toggle('text-blue-300', this._bytesPerSecond > 1000);
+    }
+
+    /** @type number */
+    _packetsPerSecond
+    get packetsPerSecond() {
+        return this._packetsPerSecond;
+    }
+
+    set packetsPerSecond(value) {
+        if (this._packetsPerSecond === value) return;
+        this._packetsPerSecond = value;
+        this.packetsPerSecondElement.innerText = `${this._packetsPerSecond} P`;
+        this.packetsPerSecondElement.classList.toggle('text-blue-300/35', this._packetsPerSecond <= 20);
+        this.packetsPerSecondElement.classList.toggle('text-blue-300/75', this._packetsPerSecond > 20 && this._packetsPerSecond <= 50);
+        this.packetsPerSecondElement.classList.toggle('text-blue-300', this._packetsPerSecond > 50);
+    }
+
     update;
 
     element = document.createElement('div');
 
     /**
-     * @param {{mac, trackerId, missedPings, latency, rssi}} data 
+     * @param {import("./messages/rawTrackerType.js")["default"]["prototype"]} data 
      */
     constructor(data) {
         this.mac = data.mac;
@@ -96,6 +126,25 @@ class Tracker {
         this.rssiElement.classList.toggle('text-green-300', this._rssi > -85);
         this.rssiElement.classList.toggle('text-yellow-300', this._rssi <= -85 && this._rssi > -100);
         this.rssiElement.classList.toggle('text-red-300', this._rssi <= -100);
+        divider = document.createElement('span');
+        divider.innerText = " | ";
+        connectionInfo.appendChild(divider);
+        this.packetsPerSecondElement = document.createElement('a');
+        this.packetsPerSecondElement.innerText = `${data.packetsPerSecond} P`;
+        this.packetsPerSecondElement.classList.toggle('text-blue-300/35', data.packetsPerSecond <= 20);
+        this.packetsPerSecondElement.classList.toggle('text-blue-300/75', data.packetsPerSecond > 20 && data.packetsPerSecond <= 50);
+        this.packetsPerSecondElement.classList.toggle('text-blue-300', data.packetsPerSecond > 50);
+        connectionInfo.appendChild(this.packetsPerSecondElement);
+        divider = document.createElement('span');
+        divider.innerText = " | ";
+        connectionInfo.appendChild(divider);
+        this.bytesPerSecondElement = document.createElement('a');
+        this.bytesPerSecondElement.innerText = `${data.bytesPerSecond} B`;
+        this.bytesPerSecondElement.classList.toggle('text-blue-300/35', data.bytesPerSecond <= 500);
+        this.bytesPerSecondElement.classList.toggle('text-blue-300/75', data.bytesPerSecond > 500 && data.bytesPerSecond <= 1000);
+        this.bytesPerSecondElement.classList.toggle('text-blue-300', data.bytesPerSecond > 1000);
+        connectionInfo.appendChild(this.bytesPerSecondElement);
+
         details.appendChild(connectionInfo);
 
         let missedPings = document.createElement('span');

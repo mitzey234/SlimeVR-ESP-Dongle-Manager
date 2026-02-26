@@ -73,7 +73,6 @@ class DongleManager extends Manager {
             this.overlay = true;
             this.connectingError = "Failed to send initialization command to the dongle";
             clearTimeout(this.connectTimeout);
-            this.element.removeEventListener('socket-com', this.handleSocketComInit.bind(this));
             return;
         }
     }
@@ -112,7 +111,7 @@ class DongleManager extends Manager {
     handleTrackerUpdate (message) {
         this.dongleContainer.bytesPerSecond = message.bytesPerSecond;
         this.dongleContainer.packetsPerSecond = message.packetsPerSecond;
-        //TODO: this.dongleContainer.temperature = message.temperature;
+        this.dongleContainer.temperature = message.temperature;
         message.trackers.forEach(tracker => {
             this.dongleContainer.updateTracker(tracker);
         });
@@ -120,6 +119,55 @@ class DongleManager extends Manager {
             let trackerInfo = message.trackers.find(t => t.id === tracker.id);
             if (!trackerInfo) return this.dongleContainer.removeTracker(tracker.id);
         });
+    }
+
+    /**
+     * @param {import("./messages/allTrackersUnpairedMessage.js").default} message
+     */
+    handleAllTrackersUnpaired (message) {
+        console.log('All trackers unpaired:', message);
+        this.dongleContainer.clearTrackers();
+        this.dongleContainer.clearPairedTrackers();
+    }
+
+    /**
+     * @param {import("./messages/trackerUnpairedMessage.js").default} message
+     */
+    handleTrackerUnpaired (message) {
+        console.log('Tracker unpaired:', message);
+        this.dongleContainer.removePairedTracker(message.id);
+    }
+
+    /**
+     * @param {import("./messages/trackerPairedMessage.js").default} message
+     */
+    handleTrackerPaired (message) {
+        console.log('Tracker paired:', message);
+        this.dongleContainer.addPairedTracker(message);
+    }
+
+    /**
+     * @param {import("./messages/pairingmodeMessage.js").default} message
+     */
+    handlePairingMode (message) {
+        console.log('Pairing mode changed:', message);
+        this.pairing = message.enabled;
+    }
+
+    /**
+     * @param {import("./messages/environmentScanModeMessage.js").default} message
+     */
+    handleEnvironmentScanMode (message) {
+        console.log('Environment scan mode changed:', message);
+        this.scanningEnvironment = message.enabled;
+    }
+
+    /**
+     * @param {import("./messages/environmentScanProgressMessage.js").default} message
+     */
+    handleEnvironmentScanProgress (message) {
+        console.log('Environment scan progress:', message);
+        //this.dongleContainer.updateEnvironmentScanProgress(message);
     }
 
     async onTimeout () {

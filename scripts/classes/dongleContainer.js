@@ -1,4 +1,5 @@
 import Tracker from "./tracker.js";
+import PairedTracker from "./pairedTracker.js";
 
 class DongleContainer {
     /** @type {import("./dongleManager.js")["default"]["prototype"]} */
@@ -15,6 +16,9 @@ class DongleContainer {
 
     /** @type {Map<string, import("./tracker.js")["default"]["prototype"]>} */
     trackers = new Map();
+
+    /** @type {Map<string, import("./pairedTracker.js")["default"]["prototype"]>} */
+    pairedTrackers = new Map();
 
     _firmwareVersion;
     get firmwareVersion() {
@@ -78,6 +82,21 @@ class DongleContainer {
         if (this._channel === value) return;
         this._channel = value;
         this.channelText.innerText = `Channel: ${this._channel}`;
+    }
+
+    _temperature;
+    get temperature() {
+        return this._temperature;
+    }
+
+    set temperature(value) {
+        if (this._temperature === value) return;
+        this._temperature = value;
+        this.temperatureText.innerText = `Temperature: ${this._temperature}°C`;
+        this.temperatureText.classList.toggle('text-red-500', this._temperature >= 85);
+        this.temperatureText.classList.toggle('text-yellow-500', this._temperature >= 65 && this._temperature < 85);
+        this.temperatureText.classList.toggle('text-green-500', this._temperature < 65);
+        this.temperatureText.title = "Chip Temperature" + (this._temperature >= 85 ? " (High, max design temp 105°C)" : "");
     }
 
     constructor(manager, device) {
@@ -178,6 +197,7 @@ class DongleContainer {
         this.macText = document.createElement('span');
         this.macText.classList.add('text-xs', 'xl:text-sm', 'text-white', "hover:text-blue-500", "active:text-blue-700", "cursor-pointer");
         this.macText.innerText = `MAC: Loading...`;
+        this.macText.title = "Click to copy MAC address to clipboard";
         this.macText.addEventListener('click', () => {
             navigator.clipboard.writeText(this.macAddress);
             this.macText.innerText = "MAC Copied!";
@@ -218,11 +238,25 @@ class DongleContainer {
         channelMetric.appendChild(this.channelText);
         metricsContainer.appendChild(channelMetric);
 
+        metricDivider = document.createElement('hr');
+        metricDivider.classList.add('hidden', 'xl:block', 'mx-4', 'h-6', 'border-l', 'border-white/25');
+        metricsContainer.appendChild(metricDivider);
+
+        let temperatureMetric = document.createElement('div');
+        temperatureMetric.classList.add('text-xs', 'xl:text-sm', 'text-white', "xl:text-lg");
+        let temperatureIcon = document.createElement('i');
+        temperatureIcon.classList.add('fa-solid', 'fa-temperature-three-quarters', 'text-sm', 'xl:text-md', 'text-white/75', 'mr-2');
+        temperatureMetric.appendChild(temperatureIcon);
+        this.temperatureText = document.createElement('span');
+        this.temperatureText.innerText = `Temperature: Loading`;
+        temperatureMetric.appendChild(this.temperatureText);
+        metricsContainer.appendChild(temperatureMetric);
+
         //End of metrics, add them to the management panel
         managementPanel.appendChild(metricsContainer);
 
         this.buttonContainer = document.createElement('div');
-        this.buttonContainer.classList.add('flex', 'flex-col', 'gap-3', "items-center", 'p-8', 'overflow-y-auto', "h-full", "w-full", "*:w-64", "xl:*:w-86", "select-none");
+        this.buttonContainer.classList.add('flex', 'flex-col', 'gap-3', "items-center", 'p-8', 'overflow-y-auto', "h-full", "w-full", "*:w-64", "xl:*:w-86", "select-none", "hideScrolls");
 
         this.pairingButton = document.createElement('button');
         this.pairingButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'active:bg-blue-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer");
@@ -307,6 +341,7 @@ class DongleContainer {
         this.device.name = message.productName;
         this.firmwareVersion = message.firmwareVersion;
         this.macAddress = message.macAddress;
+        message.pairedTrackers.forEach(trackerInfo => this.addPairedTracker(trackerInfo, true));
         message.trackers.forEach(trackerInfo => this.addTracker(trackerInfo, true));
         this.sortTrackers();
         this.channel = message.channel;
@@ -325,6 +360,8 @@ class DongleContainer {
         this.trackerListElement.appendChild(tracker.element);
         this.updateTrackerList();
         if (!skipSort) this.sortTrackers();
+
+        if (!this.pairedTrackers.has(tracker.id)) this.addPairedTracker(trackerInfo, skipSort);
     }
 
     removeTracker(trackerId) {
@@ -346,9 +383,45 @@ class DongleContainer {
             tracker.latency = trackerInfo.latency;
             tracker.rssi = trackerInfo.rssi;
             tracker.missedPings = trackerInfo.missedPings;
+            tracker.bytesPerSecond = trackerInfo.bytesPerSecond;
+            tracker.packetsPerSecond = trackerInfo.packetsPerSecond;
         } else {
             this.addTracker(trackerInfo);
         }
+    }
+
+    clearTrackers() {
+        this.trackers.forEach(tracker => tracker.element.remove());
+        this.trackers.clear();
+        this.updateTrackerList();
+    }
+
+    /**
+     * @param {import("./messages/rawPairedTrackerType.js")["default"]["prototype"]} trackerInfo 
+     * @param {boolean} skipSort 
+     */
+    addPairedTracker(trackerInfo, skipSort = false) {
+        let tracker = new PairedTracker(trackerInfo);
+        //tracker.update = this.updateTrackerList.bind(this);
+        this.pairedTrackers.set(tracker.id, tracker);
+        //this.trackerListElement.appendChild(tracker.element);
+        //this.updateTrackerList();
+        //if (!skipSort) this.sortTrackers();
+    }
+
+    removePairedTracker(trackerId) {
+        let tracker = this.pairedTrackers.get(trackerId);
+        if (tracker) {
+            this.pairedTrackers.delete(trackerId);
+            tracker.element.remove();
+            //this.updateTrackerList();
+            //this.sortTrackers();
+        }
+    }
+
+    clearPairedTrackers() {
+        this.pairedTrackers.forEach(tracker => tracker.element.remove());
+        this.pairedTrackers.clear();
     }
 
     updateTrackerList() {

@@ -40,6 +40,24 @@ class SocketComHandler {
                 case this.types.TRACKER_UPDATE:
                     this.manager.handleTrackerUpdate(message);
                     break;
+                case this.types.ALL_TRACKERS_UNPAIRED:
+                    this.manager.handleAllTrackersUnpaired(message);
+                    break;
+                case this.types.TRACKER_UNPAIRED:
+                    this.manager.handleTrackerUnpaired(message);
+                    break;
+                case this.types.TRACKER_PAIRED:
+                    this.manager.handleTrackerPaired(message);
+                    break;
+                case this.types.PAIRING_MODE:
+                    this.manager.handlePairingMode(message);
+                    break;
+                case this.types.ENVIRONMENT_SCAN_MODE:
+                    this.manager.handleEnvironmentScanMode(message);
+                    break;
+                case this.types.ENVIRONMENT_SCAN_PROGRESS:
+                    this.manager.handleEnvironmentScanProgress(message);
+                    break;
                 default:
                     console.warn('Received unhandled message type:', message);
             }

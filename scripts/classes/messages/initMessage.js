@@ -1,21 +1,6 @@
 import SerialComMessage from "./serialComMessage.js";
 import Tracker from "./rawTrackerType.js";
-
-class PairedTracker {
-    /** @type string */
-    mac;
-
-    /** @type number */
-    trackerId;
-
-    /**
-     * @param {{mac, trackerId}} data 
-     */
-    constructor(data) {
-        this.mac = data.mac;
-        this.trackerId = data.trackerId;
-    }
-}
+import PairedTracker from "./rawPairedTrackerType.js";
 
 class InitMessage extends SerialComMessage {
     /** @type string */
@@ -23,6 +8,9 @@ class InitMessage extends SerialComMessage {
 
     /** @type string */
     firmwareVersion;
+
+    /** @type string */
+    boardName;
 
     /** @type string */
     macAddress;
@@ -49,6 +37,7 @@ class InitMessage extends SerialComMessage {
         super(data);
         this.productName = this.readString();
         this.firmwareVersion = this.readString();
+        this.boardName = this.readString();
         this.macAddress = this.readMacAddress();
         this.channel = this.readUInt8();
         this.pairingMode = this.readBool();

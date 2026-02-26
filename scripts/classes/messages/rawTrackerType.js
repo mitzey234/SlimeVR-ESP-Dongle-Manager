@@ -14,8 +14,14 @@ class Tracker {
     /** @type number */
     rssi;
 
+    /** @type number */
+    bytesPerSecond;
+
+    /** @type number */
+    packetsPerSecond
+
     /**
-     * @param {{mac, trackerId, missedPings, latency, rssi}} data 
+     * @param {{mac, trackerId, missedPings, latency, rssi, bytesPerSecond, packetsPerSecond}} data 
      */
     constructor(data) {
         this.mac = data.mac;
@@ -23,6 +29,8 @@ class Tracker {
         this.missedPings = data.missedPings;
         this.latency = data.latency;
         this.rssi = data.rssi;
+        this.bytesPerSecond = data.bytesPerSecond;
+        this.packetsPerSecond = data.packetsPerSecond;
     }
 
     get id () {

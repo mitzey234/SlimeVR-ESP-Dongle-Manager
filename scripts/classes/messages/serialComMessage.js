@@ -53,6 +53,21 @@ class SerialComMessage {
     }
 
     /**
+     * Read an unsigned 32-bit integer (little-endian)
+     * @returns {number}
+     */
+    readUInt32() {
+        if (this.data.length < this.head + 4) {
+            throw new Error("Not enough data to read UInt32");
+        }
+        const byte0 = this.data[this.head++];
+        const byte1 = this.data[this.head++];
+        const byte2 = this.data[this.head++];
+        const byte3 = this.data[this.head++];
+        return byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
+    }
+
+    /**
      * Read a signed 8-bit integer
      * @returns {number}
      */
@@ -78,6 +93,23 @@ class SerialComMessage {
         const value = byte0 | (byte1 << 8);
         // Convert unsigned to signed
         return value > 32767 ? value - 65536 : value;
+    }
+
+    /** 
+     * Read a signed 32-bit integer (little-endian)
+     * @returns {number}
+     */
+    readInt32() {
+        if (this.data.length < this.head + 4) {
+            throw new Error("Not enough data to read Int32");
+        }
+        const byte0 = this.data[this.head++];
+        const byte1 = this.data[this.head++];
+        const byte2 = this.data[this.head++];
+        const byte3 = this.data[this.head++];
+        const value = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
+        // Convert unsigned to signed
+        return value > 2147483647 ? value - 4294967296 : value;
     }
 
     /**
@@ -117,13 +149,17 @@ class SerialComMessage {
         const missedPings = this.readUInt8();
         const latency = this.readUInt8();
         const rssi = this.readInt8();
+        const bytesPerSecond = this.readUInt16();
+        const packetsPerSecond = this.readUInt16();
         
         return {
             mac,
             trackerId,
             missedPings,
             latency,
-            rssi
+            rssi,
+            bytesPerSecond,
+            packetsPerSecond
         };
     }
 
