@@ -3,6 +3,8 @@ import SerialComParser from "./messages/serialComParser.js";
 import Terminal from "./terminal.js";
 import DongleContainer from "./dongleContainer.js";
 import SocketComHandler from "./messages/socketComHandler.js";
+import PairedTrackersManager from "./modals/pairedTrackersManager.js";
+import ScanningEnvironment from "./modals/scanningEnvModal.js";
 
 class DongleManager extends Manager {
     connectTimeout;
@@ -18,6 +20,13 @@ class DongleManager extends Manager {
         if (this._pairing === value) return;
         this._pairing = value;
         this.device.deviceElement.status = value ? "pairing" : "connected";
+        this.dongleContainer.pairingButton.classList.toggle('bg-blue-500', !value);
+        this.dongleContainer.pairingButton.classList.toggle('hover:bg-blue-700', !value);
+        this.dongleContainer.pairingButton.classList.toggle('active:bg-blue-900', !value);
+        this.dongleContainer.pairingButton.classList.toggle('bg-red-500', value);
+        this.dongleContainer.pairingButton.classList.toggle('hover:bg-red-700', value);
+        this.dongleContainer.pairingButton.classList.toggle('active:bg-red-900', value);
+        this.dongleContainer.pairingButton.innerText = value ? "Exit Pairing Mode" : "Enter Pairing Mode";
     }
 
     _scanningEnvironment = false;
@@ -29,6 +38,15 @@ class DongleManager extends Manager {
         if (this._scanningEnvironment === value) return;
         this._scanningEnvironment = value;
         this.device.deviceElement.status = value ? "scanning environment" : "connected";
+        if (value) {
+            this.scanningEnvironmentModal.init();
+            this.activeModal = this.scanningEnvironmentModal;
+            this.scanningEnvironmentModal.locked = true;
+        } else {
+            this.scanningEnvironmentModal.locked = false;
+            this.scanningEnvironmentModal.close();
+            //TODO: decide how to handle scans being stop mid scan and scans that complete
+        }
     }
     
     constructor(main, device) {
@@ -40,6 +58,10 @@ class DongleManager extends Manager {
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-4/9');
         this.element.appendChild(this.terminal.element);
+
+        //Modals
+        this.pairedTrackersManager = new PairedTrackersManager(this);
+        this.scanningEnvironmentModal = new ScanningEnvironment(this);
     }
 
     async onSwitch () {
@@ -64,17 +86,24 @@ class DongleManager extends Manager {
         this.dataBuffer = [];
     }
 
-    async connect () {
-        await super.connect();
-        this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
+    initInterval;
+
+    async sendInit () {
         let result = await this.sendCommand('SCInit');
         if (!result) {
             this.connecting = false;
             this.overlay = true;
             this.connectingError = "Failed to send initialization command to the dongle";
+            clearInterval(this.initInterval);
             clearTimeout(this.connectTimeout);
             return;
         }
+    }
+
+    async connect () {
+        await super.connect();
+        this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
+        this.initInterval = setInterval(this.sendInit.bind(this), 1000);
     }
 
     /**
@@ -82,6 +111,7 @@ class DongleManager extends Manager {
      */
     handleInit (message) {
         clearTimeout(this.connectTimeout);
+        clearInterval(this.initInterval);
         this.device.deviceElement.status = "connected";
         this.overlay = false;
         this.connected = true;
@@ -167,7 +197,15 @@ class DongleManager extends Manager {
      */
     handleEnvironmentScanProgress (message) {
         console.log('Environment scan progress:', message);
-        //this.dongleContainer.updateEnvironmentScanProgress(message);
+        this.scanningEnvironmentModal.updateChannel(message.currentChannel, message.channelBytesSeen);
+    }
+
+    /**
+     * @param {import("./messages/updateChannelMessage.js").default} message
+     */
+    handleUpdateChannel (message) {
+        console.log('Channel updated:', message);
+        this.dongleContainer.channel = message.channel;
     }
 
     async onTimeout () {
@@ -175,6 +213,7 @@ class DongleManager extends Manager {
         this.overlay = true;
         this.connectingError = "Connection to the dongle timed out, please check the connection and try again";
         this.connectTimeout = null;
+        clearInterval(this.initInterval);
         try {
             this.exitLoop = true;
             while (this.device.port.readable.locked) await new Promise(resolve => setTimeout(resolve, 100));

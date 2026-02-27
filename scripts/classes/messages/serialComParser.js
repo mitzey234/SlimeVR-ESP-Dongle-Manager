@@ -25,6 +25,7 @@ import TrackerPairedMessage from "./trackerPairedMessage.js";
 import PairingModeMessage from "./pairingmodeMessage.js";
 import EnvironmentScanModeMessage from "./environmentScanModeMessage.js";
 import EnvironmentScanProgressMessage from "./environmentScanProgressMessage.js";
+import UpdateChannelMessage from "./updateChannelMessage.js";
 
 class SerialComParser {
     types = types;
@@ -74,6 +75,10 @@ class SerialComParser {
                 let environmentScanProgressMessage = new EnvironmentScanProgressMessage(messageData);
                 environmentScanProgressMessage.type = messageType;
                 return environmentScanProgressMessage;
+            case types.UPDATE_CHANNEL:
+                let updateChannelMessage = new UpdateChannelMessage(messageData);
+                updateChannelMessage.type = messageType;
+                return updateChannelMessage;
             default:
                 console.warn("Received unknown message type:", messageType);
                 return null;

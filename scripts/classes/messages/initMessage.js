@@ -28,7 +28,10 @@ class InitMessage extends SerialComMessage {
     trackers;
 
     /** @type {PairedTracker[]} */
-    pairedTrackers = []; 
+    pairedTrackers = [];
+
+    /** @type number */
+    bootTime;
 
     /**
      * @param {Array<number>} data 
@@ -38,6 +41,8 @@ class InitMessage extends SerialComMessage {
         this.productName = this.readString();
         this.firmwareVersion = this.readString();
         this.boardName = this.readString();
+        this.bootTime = this.readUInt32();
+        this.bootTime = Math.floor(Date.now()/1000) - this.bootTime;
         this.macAddress = this.readMacAddress();
         this.channel = this.readUInt8();
         this.pairingMode = this.readBool();

@@ -1,3 +1,6 @@
+import Confirmation from "./modals/confirmationModal.js";
+import CustomInputModal from "./modals/inputModal.js";
+
 class Manager {
     /** @type {import("./main.js")["default"]["prototype"]} */
     main;    
@@ -96,16 +99,56 @@ class Manager {
         }
     }
 
+    /** @type {import("./modals/modal.js")["default"]["prototype"]} */
+    _activeModal = null;
+    get activeModal() {
+        return this._activeModal;
+    }
+
+    /** @param {import("./modals/modal.js")["default"]["prototype"]} value */
+    set activeModal(value) {
+        if (this._activeModal === value || (this._activeModal != null && this._activeModal.locked)) return;
+        if (this._activeModal != null) this._activeModal.onClose();
+        this._activeModal = value;
+        for (let i = 0; i < this.modalOverlay.children.length; i++) {
+            const child = this.modalOverlay.children[i];
+            child.classList.toggle('hidden', child !== value?.element);
+        }
+        if (value != null) value.element.classList.remove('hidden');
+        this.modalOverlay.classList.toggle('opacity-0', value == null);
+        this.modalOverlay.classList.toggle('pointer-events-none', value == null);
+    }
+
     constructor(main, device) {
         this.main = main;
         this.device = device;
         this.element.classList.add('flex', 'flex-row', 'items-center', 'justify-center', 'h-full', 'w-full', "hidden", "bg-black/30", "backdrop-blur-xl", "rounded-lg", "overflow-auto", "hideScrolls");
 
         //Modal overlay
-        this.modalOverlay.classList.add('absolute', 'z-10', 'bg-black/25', 'flex', 'items-center', 'justify-center', 'w-full', 'h-full', "transition", "duration-200", "ease-in-out", "opacity-0", "pointer-events-none");
-        
+        this.modalOverlay.role = "Modal Overlay";
+        this.modalOverlay.classList.add('absolute', 'z-10', 'bg-black/50', 'flex', 'items-center', 'justify-center', 'w-full', 'h-full', "transition", "duration-200", "ease-in-out", "opacity-0", "pointer-events-none", "backdrop-blur-sm");
+        this._overlayPointerDown = false;
+        this.modalOverlay.addEventListener('pointerdown', (e) => {
+            this._overlayPointerDown = e.target === this.modalOverlay;
+        });
+        this.modalOverlay.addEventListener('pointerup', (e) => {
+            if (this._overlayPointerDown && e.target === this.modalOverlay) {
+                this.activeModal = null;
+            }
+            this._overlayPointerDown = false;
+        });
+        this.modalOverlay.addEventListener('pointercancel', () => {
+            this._overlayPointerDown = false;
+        });
+        this.element.appendChild(this.modalOverlay);
+
+        //Modals
+        this.confirmation = new Confirmation(this);
+        this.customInput = new CustomInputModal(this);
+
         //Connecting overlay items
-        this.connectingOverlay.classList.add('absolute', 'z-20', 'bg-black/75', 'flex', 'items-center', 'justify-center', 'w-full', 'h-full', "transition", "duration-200", "ease-in-out", "backdrop-blur-lg");
+        this.connectingOverlay.role = "Connecting Overlay";
+        this.connectingOverlay.classList.add('absolute', 'z-20', 'bg-black/75', 'flex', 'items-center', 'justify-center', 'w-full', 'h-full', "transition", "duration-200", "ease-in-out", "backdrop-blur-md");
 
 
         //Connecting elements

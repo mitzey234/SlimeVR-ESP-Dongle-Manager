@@ -46,3 +46,17 @@ body {
 .tracker:hover > div > i.fa-circle-minus {
     opacity: 1;
 }
+
+.colRuleTest {
+    column-rule: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.paired-tracker > button.unpair-button {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.paired-tracker:hover > button.unpair-button {
+    opacity: 1;
+    pointer-events: all;
+}

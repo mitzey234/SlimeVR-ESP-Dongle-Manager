@@ -16,6 +16,9 @@ class Tracker {
         if (this._missedPings === value) return;
         this._missedPings = value;
         this.missedPingsElement.innerText = `Missed Pings: ${this._missedPings}`;
+        this.missedPingsElement.classList.toggle('text-yellow-300', this._missedPings > 0 && this._missedPings <= 2);
+        this.missedPingsElement.classList.toggle('text-orange-300', this._missedPings > 2 && this._missedPings <= 3);
+        this.missedPingsElement.classList.toggle('text-red-300', this._missedPings > 3);
     }
 
     /** @type number */
@@ -44,9 +47,9 @@ class Tracker {
         if (this._rssi === value) return;
         this._rssi = value;
         this.rssiElement.innerText = `${this._rssi}dBm`;
-        this.rssiElement.classList.toggle('text-green-300', this._rssi > -85);
-        this.rssiElement.classList.toggle('text-yellow-300', this._rssi <= -85 && this._rssi > -100);
-        this.rssiElement.classList.toggle('text-red-300', this._rssi <= -100);
+        this.rssiElement.classList.toggle('text-green-300', this._rssi > -55);
+        this.rssiElement.classList.toggle('text-yellow-300', this._rssi <= -55 && this._rssi > -75);
+        this.rssiElement.classList.toggle('text-red-300', this._rssi <= -75);
         if (this.update != null && typeof this.update === "function") {
             this.update();
         }
@@ -155,18 +158,12 @@ class Tracker {
         details.appendChild(missedPings);
         this.element.appendChild(details);
 
-        let unpairButton = document.createElement('div');
+        this.unpairButton = document.createElement('div');
         let unpairIcon = document.createElement('i');
         unpairIcon.classList.add('fa-solid', 'fa-circle-minus', 'text-md', 'text-red-400', "cursor-pointer", "transition", "duration-200", "ease-in-out");
-        unpairButton.appendChild(unpairIcon);
-        unpairButton.classList.add("self-center", "ml-auto");
-        unpairButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm(`Are you sure you want to unpair Tracker ${this.trackerId}?\nThis will remove it from the dongle and you will need to pair it again if you want to use it\nMAC Address: ${this.mac}`)) {
-                //delete tracker
-            }
-        });
-        this.element.appendChild(unpairButton);
+        this.unpairButton.appendChild(unpairIcon);
+        this.unpairButton.classList.add("self-center", "ml-auto");
+        this.element.appendChild(this.unpairButton);
     }
 
     get id () {

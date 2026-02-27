@@ -12,8 +12,8 @@ class TrackerPairedMessage extends SerialComMessage {
      */
     constructor (data) {
         super(data);
-        this.mac = this.readMac();
-        this.trackerId = this.readByte();
+        this.mac = this.readMacAddress();
+        this.trackerId = this.readUInt8();
     }
 
     get id () {

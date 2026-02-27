@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron/main');
 const path = require('node:path');
+const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
 const inspector = require('inspector');
 
@@ -25,17 +26,61 @@ if (DEBUG) console.log('Debugger detected, enabling debug mode');
 
 Menu.setApplicationMenu(null);
 
+const windowStateFile = path.join(app.getPath('userData'), 'window-state.json');
+
+function loadWindowState() {
+  try {
+    if (fs.existsSync(windowStateFile)) {
+      const data = fs.readFileSync(windowStateFile, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Failed to load window state:', error);
+  }
+  return {
+    width: 1600,
+    height: 1000
+  };
+}
+
+function saveWindowState(window) {
+  try {
+    const bounds = window.getBounds();
+    fs.writeFileSync(windowStateFile, JSON.stringify(bounds), 'utf8');
+  } catch (error) {
+    console.error('Failed to save window state:', error);
+  }
+}
+
 function createWindow() {
+  const windowState = loadWindowState();
+  
   const mainWindow = new BrowserWindow({
     titleBarStyle: "hidden",
-    width: 1600,
-    height: 1000,
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
     minWidth: 1080,
     minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
     }
   })
+  
+  // Save window state when it's resized or moved
+  let saveTimeout;
+  const debouncedSave = () => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      if (!mainWindow.isMaximized() && !mainWindow.isMinimized()) {
+        saveWindowState(mainWindow);
+      }
+    }, 500);
+  };
+  
+  mainWindow.on('resize', debouncedSave);
+  mainWindow.on('move', debouncedSave)
 
   mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
     if (permission === 'serial' && details.securityOrigin === 'file:///') {
