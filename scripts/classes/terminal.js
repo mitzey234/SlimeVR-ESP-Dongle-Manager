@@ -51,15 +51,15 @@ class Terminal {
 
     addMessage (message) {
         let messageElement = document.createElement('div');
-        messageElement.classList.add('text-white', "flex", "flex-row", "items-start", 'text-xs');
+        messageElement.classList.add('text-white', "flex", "flex-row", 'text-xs', "hover:bg-white/10", "rounded", "transition", "duration-100", "ease-in-out", "items-center");
         let timestamp = new Date().toLocaleTimeString();
         let stampElement = document.createElement('span');
-        stampElement.classList.add('text-white/50', 'mr-2', 'select-none');
+        stampElement.classList.add('text-white/50', 'mr-2', 'select-none', "shrink-0");
         stampElement.innerText = `[${timestamp}]`;
         messageElement.appendChild(stampElement);
 
         let contentElement = document.createElement('span');
-        contentElement.classList.add('whitespace-pre-wrap', 'break-words', 'flex-1', 'monospace', 'font-mono');
+        contentElement.classList.add('whitespace-pre-wrap', 'break-words', 'flex-1', 'monospace', 'font-mono', 'max-w-full', 'overflow-hidden');
         contentElement.innerText = message.replace(/\r/g, ''); //Remove carriage returns from the message
         messageElement.appendChild(contentElement);
         this.messageContainer.appendChild(messageElement);

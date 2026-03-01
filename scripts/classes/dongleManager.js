@@ -42,10 +42,9 @@ class DongleManager extends Manager {
             this.scanningEnvironmentModal.init();
             this.activeModal = this.scanningEnvironmentModal;
             this.scanningEnvironmentModal.locked = true;
-        } else {
+        } else if (this.scanningEnvironmentModal.locked) {
             this.scanningEnvironmentModal.locked = false;
             this.scanningEnvironmentModal.close();
-            //TODO: decide how to handle scans being stop mid scan and scans that complete
         }
     }
     
@@ -115,6 +114,7 @@ class DongleManager extends Manager {
         this.device.deviceElement.status = "connected";
         this.overlay = false;
         this.connected = true;
+        this.device.deviceElement.nameElement.title = `Board: ` + message.boardName;
         console.log('Dongle initialized successfully', message);
         this.dongleContainer.init(message);
     }
@@ -197,7 +197,21 @@ class DongleManager extends Manager {
      */
     handleEnvironmentScanProgress (message) {
         console.log('Environment scan progress:', message);
-        this.scanningEnvironmentModal.updateChannel(message.currentChannel, message.channelBytesSeen);
+        this.scanningEnvironmentModal.scanningTime = message.scanningTime;
+        this.scanningEnvironmentModal.updateChannel(message.currentChannel, message.channelBytesSeen, message.elapsedTime);
+    }
+
+    /**
+     * @param {import("./messages/environmentScanResultsMessage.js").default} message
+     */
+    handleEnvironmentScanResults (message) {
+        console.log('Environment scan results:', message);
+        message.channels.forEach((channel, index) => {
+            this.scanningEnvironmentModal.updateChannel(index+1, channel, this.scanningEnvironmentModal.scanningTime);
+        });
+        this.scanningEnvironmentModal.selectedChannel = message.selected;
+        this.scanningEnvironmentModal.locked = false;
+        this.scanningEnvironment = false;
     }
 
     /**

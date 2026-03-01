@@ -34,7 +34,7 @@ class PairedTracker {
         titleContainer.appendChild(macText);
         this.element.appendChild(titleContainer);
         this.connectedBadge = document.createElement('span');
-        this.connectedBadge.classList.add('text-xs', 'font-semibold', 'px-2', 'py-1', 'rounded-full', 'bg-green-500/25', 'text-white/75', "ml-4", "hover:text-white", "hover:bg-green-500/50", "transition", "duration-200", "ease-in-out");
+        this.connectedBadge.classList.add('hidden', 'text-xs', 'font-semibold', 'px-2', 'py-1', 'rounded-full', 'bg-green-500/25', 'text-white/75', "ml-4", "hover:text-white", "hover:bg-green-500/50", "transition", "duration-200", "ease-in-out");
         this.connectedBadge.innerText = "Connected";
         title.appendChild(this.connectedBadge);
 

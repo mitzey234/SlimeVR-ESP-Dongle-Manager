@@ -159,6 +159,7 @@ class Tracker {
         this.element.appendChild(details);
 
         this.unpairButton = document.createElement('div');
+        this.unpairButton.title = "Unpair Tracker - Hold Shift to skip confirmation dialog";
         let unpairIcon = document.createElement('i');
         unpairIcon.classList.add('fa-solid', 'fa-circle-minus', 'text-md', 'text-red-400', "cursor-pointer", "transition", "duration-200", "ease-in-out");
         this.unpairButton.appendChild(unpairIcon);

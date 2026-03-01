@@ -61,6 +61,9 @@ class SocketComHandler {
                 case this.types.UPDATE_CHANNEL:
                     this.manager.handleUpdateChannel(message);
                     break;
+                case this.types.ENVIRONMENT_SCAN_RESULT:
+                    this.manager.handleEnvironmentScanResults(message);
+                    break;
                 default:
                     console.warn('Received unhandled message type:', message);
             }

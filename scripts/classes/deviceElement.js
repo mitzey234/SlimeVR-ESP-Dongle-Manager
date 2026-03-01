@@ -59,7 +59,7 @@ class DeviceElement {
         if (value == null) this.subtextElement2.classList.add('hidden');
         else this.subtextElement2.classList.remove('hidden');
     }
-
+    
     constructor(device) {
         this.device = device;
         this.element.classList.add('relative', 'h-full', 'w-42', 'hover:bg-black/20', 'active:bg-black/40', 'flex', 'flex-col', 'items-center', 'justify-center', 'cursor-pointer', "select-none", "transition", "duration-200", "ease-in-out", "shrink-0");

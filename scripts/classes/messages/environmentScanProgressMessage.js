@@ -13,6 +13,9 @@ class EnvironmentScanProgressMessage extends SerialComMessage {
     /** @type {number} */
     elapsedTime;
 
+    /** @type {number} */
+    scanningTime;
+
     /**
      * @param {Array<number>} data 
      */
@@ -22,6 +25,7 @@ class EnvironmentScanProgressMessage extends SerialComMessage {
         this.channelBytesSeen = this.readUInt32();
         this.uniqueBSSIDs = this.readUInt16();
         this.elapsedTime = this.readUInt16();
+        this.scanningTime = this.readUInt16();
     }
 }
 
