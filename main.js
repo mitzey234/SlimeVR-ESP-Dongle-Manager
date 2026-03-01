@@ -1,37 +1,170 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron/main');
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron/main');
 const path = require('node:path');
+const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
-const { SerialPort } = require('serialport');
-const Transport = require("./classes/NodeSerialportTransport.js");
-const crypto = require('crypto');
-const { ESPLoader } = require('esptool-js');
+const inspector = require('inspector');
 
-function createWindow () {
+function isInspectorRunning() {
+  return inspector.url() !== undefined;
+}
+
+function isDebuggerAttached() {
+  const execArgv = process.argv || [];
+  const hasInspectFlag = execArgv.some((arg) =>
+    arg.startsWith('--inspect') ||
+    arg.startsWith('--inspect-brk') ||
+    arg.startsWith('--remote-debugging-port') ||
+    arg.startsWith('--debug')
+  );
+
+  return hasInspectFlag || isInspectorRunning();
+}
+
+const DEBUG = isDebuggerAttached();
+
+if (DEBUG) console.log('Debugger detected, enabling debug mode');
+
+Menu.setApplicationMenu(null);
+
+const windowStateFile = path.join(app.getPath('userData'), 'window-state.json');
+
+function loadWindowState() {
+  try {
+    if (fs.existsSync(windowStateFile)) {
+      const data = fs.readFileSync(windowStateFile, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Failed to load window state:', error);
+  }
+  return {
+    width: 1600,
+    height: 1000
+  };
+}
+
+function saveWindowState(window) {
+  try {
+    const bounds = window.getBounds();
+    fs.writeFileSync(windowStateFile, JSON.stringify(bounds), 'utf8');
+  } catch (error) {
+    console.error('Failed to save window state:', error);
+  }
+}
+
+function createWindow() {
+  const windowState = loadWindowState();
+  
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    titleBarStyle: "hidden",
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
+    minWidth: 1080,
+    minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
     }
   })
+  
+  // Save window state when it's resized or moved
+  let saveTimeout;
+  const debouncedSave = () => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      if (!mainWindow.isMaximized() && !mainWindow.isMinimized()) {
+        saveWindowState(mainWindow);
+      }
+    }, 500);
+  };
+  
+  mainWindow.on('resize', debouncedSave);
+  mainWindow.on('move', debouncedSave)
+
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === 'serial' && details.securityOrigin === 'file:///') {
+      return true
+    }
+
+    return false
+  })
+
+  mainWindow.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.deviceType === 'serial' && details.origin === 'file://') {
+      return true
+    }
+
+    return false
+  })
 
   mainWindow.loadFile('index.html')
-  mainWindow.webContents.openDevTools()
+  if (DEBUG) mainWindow.webContents.openDevTools()
+  return mainWindow;
 }
 
-async function handleFileOpen (event, filters, properties) {
-  const { canceled, filePaths } = await dialog.showOpenDialog({filters: filters, properties: properties})
+async function handleFileOpen(event, filters, properties) {
+  const { canceled, filePaths } = await dialog.showOpenDialog({ filters: filters, properties: properties })
   if (!canceled) {
     return filePaths[0]
   }
 }
 
+async function readFirmwareArchive(event, firmwarePath) {
+  let firmware = new Firmware(firmwarePath);
+  let parseResult = await firmware.parse();
+  if (parseResult !== true) {
+    console.error('Firmware parsing failed with code:', parseResult);
+    return parseResult;
+  }
+  return firmware;
+}
+
 app.whenReady().then(() => {
-  createWindow()
+  let window = createWindow();
 
   ipcMain.handle('dialog:openFile', handleFileOpen)
 
-  ipcMain.handle('esp:flash', flashFirmware)
+  ipcMain.handle('firmware:readArchive', readFirmwareArchive)
+
+  ipcMain.handle('window:minimize', () => {
+    window.minimize();
+  })
+
+  ipcMain.handle('window:maximize', () => {
+    if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
+  })
+
+  ipcMain.handle('app:version', () => {
+    return app.getVersion();
+  })
+
+  ipcMain.handle('window:close', () => {
+    window.close();
+  })
+
+  ipcMain.handle('window:devTools', () => {
+    window.webContents.isDevToolsOpened() ? window.webContents.closeDevTools() : window.webContents.openDevTools();
+  });
+
+  ipcMain.handle('app:update', () => {
+    // Placeholder for update logic
+    console.log('Update button clicked');
+  });
+
+  ipcMain.handle('app:checkForUpdates', async () => {
+    // Placeholder for check for updates logic
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async update check
+    console.log('Check for updates triggered');
+  });
+
+  ipcMain.handle('app:DEBUG', () => {
+    return DEBUG;
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -41,69 +174,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
-
-let fileArray = [];
-let progressBars = [];
-
-async function flashFirmware(event, firmwarePath) {
-    fileArray = [];
-    progressBars = [];
-    let firmware = new Firmware(firmwarePath);
-    let parseResult = await firmware.parse();
-    if (parseResult !== true) {
-        console.error('Firmware parsing failed with code:', parseResult);
-        return parseResult;
-    }
-    console.log('Firmware files to flash:', firmware.files);
-    for (let i in firmware.files) {
-        let file = firmware.files[i];
-        if (!file) continue;
-        // Convert Buffer to string for esptool-js bundle compatibility
-        const dataString = file.data.toString('binary');
-        fileArray.push({offset: file.offset, data: dataString});
-    }
-    start();
-}
-
-async function start () {
-    if (!ESPLoader) {
-        console.error('ESPLoader not loaded yet. Please wait...');
-        return;
-    }
-    
-    let ports = await SerialPort.list();
-    var info = ports[1];
-    if (!info) {
-        console.error('No serial ports found.');
-        return;
-    }
-
-    let esploader = new ESPLoader({
-        transport: new Transport(info, true),
-        terminal: undefined,
-        debugLogging: true,
-        enableTracing: true
-    });
-
-    let chip = await esploader.main();
-    console.log('Connected to chip:', chip, esploader);
-
-    let flashOptions = {
-        fileArray: fileArray,
-        eraseAll: false,
-        compress: true,
-        flashMode: "qio",
-        flashFreq: "80000000",
-        flashSize: "keep",
-        reportProgress: (fileIndex, written, total) => {
-            console.log(`Flashing file ${fileIndex}: ${written}/${total} bytes`);
-            progressBars[fileIndex].value = (written / total) * 100;
-        },
-        calculateMD5Hash: (image) => {
-            const latin1String = Array.from(image, (byte) => String.fromCharCode(byte)).join("");
-            return crypto.createHash('md5').update(latin1String, 'latin1').digest('hex');
-        }
-    }
-    await esploader.writeFlash(flashOptions);
-    await esploader.after();
-}

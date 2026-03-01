@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+body {
+    background-image: url(../background.png);
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.draggable {
+    -webkit-app-region: drag;
+}
+
+#titleBar {
+    -webkit-app-region: drag;
+}
+
+#titleBar button {
+    -webkit-app-region: no-drag;
+}
+
+#loadingTooLongText a {
+    -webkit-app-region: no-drag;
+}
+
+.force-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%)
+}
+
+.hideScrolls::-webkit-scrollbar {
+    display: none;
+}
+
+.hideScrolls {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.tracker > div > i.fa-circle-minus {
+    opacity: 0;
+}
+
+.tracker:hover > div > i.fa-circle-minus {
+    opacity: 1;
+}
+
+.colRuleTest {
+    column-rule: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.paired-tracker > button.unpair-button {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.paired-tracker:hover > button.unpair-button {
+    opacity: 1;
+    pointer-events: all;
+}

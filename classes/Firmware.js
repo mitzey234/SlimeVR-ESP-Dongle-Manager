@@ -5,8 +5,8 @@ const unzip = require('unzipper');
 
 class Firmware {
     bootloaderOffset = 0;
-    partitionsOffset = 4096;
-    firmwareOffset = 16384;
+    partitionsOffset = 32768;
+    firmwareOffset = 65536;
 
     files = {};
 
@@ -77,6 +77,11 @@ class Firmware {
         if (fs.existsSync(path.join(this.path, 'bootloader.bin'))) this.files['bootloader.bin'] = {path: path.join(this.path, 'bootloader.bin'), offset: this.bootloaderOffset};
         if (fs.existsSync(path.join(this.path, 'partitions.bin'))) this.files['partitions.bin'] = {path: path.join(this.path, 'partitions.bin'), offset: this.partitionsOffset};
         if (fs.existsSync(path.join(this.path, 'firmware.bin'))) this.files['firmware.bin'] = {path: path.join(this.path, 'firmware.bin'), offset: this.firmwareOffset};
+
+        if (Object.keys(this.files).length === 0) {
+            console.error('No valid firmware files found in the archive.');
+            return -6;
+        }
 
         for (let i in this.files) {
             let file = this.files[i];
