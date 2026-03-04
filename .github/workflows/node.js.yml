@@ -49,7 +49,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npublishe
+    - run: npm run publish
   ubuntu:
 
     runs-on: [ubuntu-latest]
