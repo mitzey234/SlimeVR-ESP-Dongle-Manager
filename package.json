@@ -14,12 +14,11 @@
     "tailwindcss": "^4.1.18"
   },
   "name": "slimevr-esp-dongle-manager",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "This is a electron based application to help manage and control the firmware on an ESP based tracker dongle",
   "main": "main.js",
   "dependencies": {
     "detect-libc": "^2.1.2",
-    "electron-squirrel-startup": "^1.0.1",
     "enhanced-resolve": "^5.19.0",
     "graceful-fs": "^4.2.11",
     "is-extglob": "^2.1.1",
@@ -42,7 +41,7 @@
     "watch": "npx @tailwindcss/cli -i index.css -o styles/output.css --watch",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "$env:GITHUB_TOKEN = $env:SLVRDMRP-T; electron-forge publish"
+    "publish": "set GITHUB_TOKEN=%SLVRDMRP%&& electron-forge publish"
   },
   "repository": {
     "type": "git",
@@ -51,7 +50,7 @@
   "keywords": [
     "slime-vr",
     "esp32",
-    "donlge",
+    "dongle",
     "hid"
   ],
   "author": "Mitzey",

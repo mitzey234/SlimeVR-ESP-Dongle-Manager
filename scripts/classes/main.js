@@ -122,7 +122,13 @@ class Main {
 
     async start () {
         this.electronAPI = new ElectronAPI();
-        await this.electronAPI.checkForUpdates();
+        this.updates = await this.electronAPI.checkForUpdates();
+        if (this.updates != null) {
+            if (this.updates.message != null) console.error('Error checking for updates:', this.updates.message);
+            else console.log('Update information:', this.updates);
+        } else {
+            console.log('No updates available');
+        }
         minimizeBtn.addEventListener('click', () => {
             this.electronAPI.minimizeWindow();
         });
@@ -159,10 +165,8 @@ class Main {
         ports.forEach(port => {
             this.onDeviceConnected({ target: port });
         });
-        setTimeout(function () {
-            overlay.classList.remove("draggable");
-            overlay.classList.add("opacity-0", "pointer-events-none");
-        }, await this.electronAPI.DEBUG() ? 500 : 1000);
+        this.hooks.forEach(hook => hook.res());
+        this.hooks = [];
     }
 
     waitForReady() {

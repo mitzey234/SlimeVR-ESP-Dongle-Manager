@@ -2,12 +2,13 @@ let loadingText = document.getElementById('loadingText');
 let Main;
 
 let loadingTimeout = setTimeout(loadingTimeoutFunction, 15000);
-
+let overlay = document.getElementById('overlay');
 let loadingMessages = ["Spinning Gears...", "Loading Modules...", "Almost There...", "Just a Moment...", "Preparing the Magic...", "Warming Up the ESPs...", "Calibrating the Dongle...", "Summoning the Code..."];
 
 document.getElementById('reloadLink').addEventListener('click', () => {
     location.reload();
 });
+
 
 loadingText.innerText = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
 setInterval(() => {
@@ -18,6 +19,10 @@ setInterval(() => {
     Main = (await import("./classes/main.js")).default;
     let main = new Main();
     await main.waitForReady();
+    setTimeout(function () {
+        overlay.classList.remove("draggable");
+        overlay.classList.add("opacity-0", "pointer-events-none");
+    }, await main.electronAPI.DEBUG() ? 500 : 1000);
     console.log('Core class ready:', main);
     clearTimeout(loadingTimeout);
     document.getElementById('loadingTooLongText').classList.add('hidden');

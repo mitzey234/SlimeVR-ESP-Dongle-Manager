@@ -4,7 +4,48 @@ const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
 const inspector = require('inspector');
 
-const server = "https://slimevr-dongle-manager-deployer.vercel.app/";
+var handleStartupEvent = function() {
+  if (process.platform !== 'win32') {
+    return false;
+  }
+
+  var squirrelCommand = process.argv[1];
+  switch (squirrelCommand) {
+    case '--squirrel-install':
+    case '--squirrel-updated':
+
+      // Optionally do things such as:
+      //
+      // - Install desktop and start menu shortcuts
+      // - Add your .exe to the PATH
+      // - Write to the registry for things like file associations and
+      //   explorer context menus
+
+      // Always quit when done
+      app.quit();
+
+      return true;
+    case '--squirrel-uninstall':
+      // Undo anything you did in the --squirrel-install and
+      // --squirrel-updated handlers
+
+      // Always quit when done
+      app.quit();
+
+      return true;
+    case '--squirrel-obsolete':
+      // This is called on the outgoing version of your app before
+      // we update to the new version - it's the opposite of
+      // --squirrel-updated
+      app.quit();
+      return true;
+  }
+};
+
+handleStartupEvent();
+if (handleStartupEvent()) return;
+
+const server = "https://slimevr-dongle-manager-deployer.vercel.app";
 const url = `${server}/update/${process.platform}/${app.getVersion()}`
 
 autoUpdater.setFeedURL({ url })
@@ -125,6 +166,34 @@ async function readFirmwareArchive(event, firmwarePath) {
   return firmware;
 }
 
+let checkingForUpdates = false;
+var updateInfo = null;
+/** @type {Array<{resolve: Function, reject: Function}>} */
+let updateHooks = [];
+
+autoUpdater.on('update-available', (e, notes, name, date, url) => {
+  let obj = {e, notes, name, date, url};
+  console.log('Update available:', obj);
+  updateInfo = obj;
+  updateHooks.forEach(hook => hook.resolve(obj));
+  updateHooks = [];
+  checkingForUpdates = false;
+});
+
+autoUpdater.on('error', (e) => {
+  console.log('Error while updating:', e);
+  updateHooks.forEach(hook => hook.reject(e));
+  updateHooks = [];
+  checkingForUpdates = false;
+});
+
+autoUpdater.on('update-not-available', (e) => {
+  console.log('No updates available');
+  updateHooks.forEach(hook => hook.resolve(null));
+  updateHooks = [];
+  checkingForUpdates = false;
+});
+
 app.whenReady().then(() => {
   let window = createWindow();
 
@@ -163,8 +232,22 @@ app.whenReady().then(() => {
 
   ipcMain.handle('app:checkForUpdates', async () => {
     // Placeholder for check for updates logic
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async update check
-    console.log('Check for updates triggered');
+    if (app.isPackaged) return null;
+    if (updateInfo != null) return updateInfo;
+    let prom = new Promise((resolve, reject) => {
+      updateHooks.push({ resolve, reject });
+    });
+    if (!checkingForUpdates) {
+      console.log('Checking for updates...');
+      checkingForUpdates = true;
+      autoUpdater.checkForUpdates();
+    }
+    try {
+      return await prom;
+    } catch (e) {
+      console.error('Error while checking for updates:', e);
+      return e;
+    }
   });
 
   ipcMain.handle('app:DEBUG', () => {
