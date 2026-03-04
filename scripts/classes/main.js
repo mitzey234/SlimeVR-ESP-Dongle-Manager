@@ -44,6 +44,8 @@ class Main {
     deviceContainerElement = document.getElementById('deviceSelector');
 
     contentContainerElement = document.getElementById('contentContainer');
+
+    updateInterval = setInterval(this.checkForUpdates.bind(this), 10 * 60 * 1000); //Check for updates every 10 minutes
     
     get currentDevice () {
         return this._currentDevice;

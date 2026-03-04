@@ -254,7 +254,6 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('app:DEBUG', () => {
-    return true;
     return DEBUG;
   });
 
