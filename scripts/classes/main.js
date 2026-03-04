@@ -120,15 +120,23 @@ class Main {
         this.start();
     }
 
-    async start () {
-        this.electronAPI = new ElectronAPI();
+    async checkForUpdates() {
         this.updates = await this.electronAPI.checkForUpdates();
         if (this.updates != null) {
             if (this.updates.message != null) console.error('Error checking for updates:', this.updates.message);
-            else console.log('Update information:', this.updates);
+            else {
+                console.log('Update information:', this.updates);
+                updateBtn.classList.remove('hidden');
+                updateBtn.title = `Version ${this.updates.name} is available. Click to install`;
+            }
         } else {
             console.log('No updates available');
         }
+    }
+
+    async start () {
+        this.electronAPI = new ElectronAPI();
+        this.checkForUpdates();
         minimizeBtn.addEventListener('click', () => {
             this.electronAPI.minimizeWindow();
         });
@@ -153,7 +161,7 @@ class Main {
         if (await this.electronAPI.DEBUG()) {
             devToolsBtn.classList.remove('hidden');
             refreshBtn.classList.remove('hidden');
-            updateBtn.classList.remove('hidden');
+            //updateBtn.classList.remove('hidden');
         } else {
             devToolsBtn.remove();
             refreshBtn.remove();

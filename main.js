@@ -171,7 +171,7 @@ var updateInfo = null;
 /** @type {Array<{resolve: Function, reject: Function}>} */
 let updateHooks = [];
 
-autoUpdater.on('update-available', (e, notes, name, date, url) => {
+autoUpdater.on('update-downloaded', (e, notes, name, date, url) => {
   let obj = {e, notes, name, date, url};
   console.log('Update available:', obj);
   updateInfo = obj;
@@ -225,14 +225,9 @@ app.whenReady().then(() => {
     window.webContents.isDevToolsOpened() ? window.webContents.closeDevTools() : window.webContents.openDevTools();
   });
 
-  ipcMain.handle('app:update', () => {
-    // Placeholder for update logic
-    console.log('Update button clicked');
-  });
-
   ipcMain.handle('app:checkForUpdates', async () => {
     // Placeholder for check for updates logic
-    if (app.isPackaged) return null;
+    if (!app.isPackaged) return null;
     if (updateInfo != null) return updateInfo;
     let prom = new Promise((resolve, reject) => {
       updateHooks.push({ resolve, reject });
@@ -250,7 +245,16 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('app:update', () => {
+    if (updateInfo) {
+      autoUpdater.quitAndInstall();
+    } else {
+      console.log('No update info available, cannot install update');
+    }
+  });
+
   ipcMain.handle('app:DEBUG', () => {
+    return true;
     return DEBUG;
   });
 
