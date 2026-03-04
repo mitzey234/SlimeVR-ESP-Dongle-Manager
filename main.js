@@ -1,8 +1,13 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron/main');
+const { app, BrowserWindow, dialog, ipcMain, Menu, autoUpdater } = require('electron/main');
 const path = require('node:path');
 const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
 const inspector = require('inspector');
+
+const server = "https://slimevr-dongle-manager-deployer.vercel.app/";
+const url = `${server}/update/${process.platform}/${app.getVersion()}`
+
+autoUpdater.setFeedURL({ url })
 
 function isInspectorRunning() {
   return inspector.url() !== undefined;
