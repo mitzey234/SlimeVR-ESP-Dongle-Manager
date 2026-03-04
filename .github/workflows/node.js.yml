@@ -13,6 +13,8 @@ jobs:
   windows:
 
     runs-on: [windows-latest]
+    env:
+      SLVRDMRP: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       matrix:
@@ -27,10 +29,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npm run make
+    - run: npm run publish
   macos:
 
     runs-on: [macos-latest]
+    env:
+      SLVRDMRP: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       matrix:
@@ -45,10 +49,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npm run make
+    - run: npublishe
   ubuntu:
 
     runs-on: [ubuntu-latest]
+    env:
+      SLVRDMRP: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       matrix:
@@ -63,4 +69,4 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npm run make
+    - run: npm run publish
