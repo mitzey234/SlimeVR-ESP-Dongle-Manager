@@ -2,6 +2,7 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.6.1",
     "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-flatpak": "^7.11.1",
     "@electron-forge/maker-rpm": "^7.11.1",
     "@electron-forge/maker-squirrel": "^7.11.1",
     "@electron-forge/maker-zip": "^7.11.1",
@@ -14,7 +15,7 @@
     "tailwindcss": "^4.1.18"
   },
   "name": "slimevr-esp-dongle-manager",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "This is a electron based application to help manage and control the firmware on an ESP based tracker dongle",
   "main": "main.js",
   "dependencies": {
