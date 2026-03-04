@@ -40,7 +40,8 @@
     "watch": "npx @tailwindcss/cli -i index.css -o styles/output.css --watch",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "set GITHUB_TOKEN=%SLVRDMRP%&& electron-forge publish"
+    "publish": "electron-forge publish",
+    "publish-local": "set GITHUB_TOKEN=%SLVRDMRP%&& electron-forge publish"
   },
   "repository": {
     "type": "git",
