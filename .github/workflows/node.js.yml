@@ -37,7 +37,7 @@ jobs:
       contents: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      CSC_IDENTITY_AUTO_DISCOVERY: false
     strategy:
       matrix:
         node-version: [24.x]
