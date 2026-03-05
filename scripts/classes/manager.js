@@ -273,9 +273,10 @@ class Manager {
         } catch (error) {
             this.connectingError = error.message;
             console.error('Failed to open port:', error);
-            return;
+            return false;
         }
         this.startReaderLoop();
+        return true;
     }
 }
 

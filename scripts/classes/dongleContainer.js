@@ -374,6 +374,8 @@ class DongleContainer {
         this.buttonContainer.appendChild(this.factoryResetButton);
         managementPanel.appendChild(this.buttonContainer);
         this.element.appendChild(managementPanel);
+
+        manager.element.appendChild(this.element);
     }
 
     update () {

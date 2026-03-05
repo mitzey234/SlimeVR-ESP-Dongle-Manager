@@ -52,11 +52,9 @@ class DongleManager extends Manager {
         super(main, device);
         this.allowSerialCom = true;
         this.dongleContainer = new DongleContainer(this, device);
-        this.element.appendChild(this.dongleContainer.element);
         this.terminal = new Terminal(this, device);
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-4/9');
-        this.element.appendChild(this.terminal.element);
 
         //Modals
         this.pairedTrackersManager = new PairedTrackersManager(this);
@@ -100,7 +98,8 @@ class DongleManager extends Manager {
     }
 
     async connect () {
-        await super.connect();
+        let result = await super.connect();
+        if (!result) return;
         this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
         this.initInterval = setInterval(this.sendInit.bind(this), 1000);
     }

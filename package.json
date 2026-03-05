@@ -15,7 +15,7 @@
     "tailwindcss": "^4.1.18"
   },
   "name": "slimevr-esp-dongle-manager",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "This is a electron based application to help manage and control the firmware on an ESP based tracker dongle",
   "main": "main.js",
   "dependencies": {

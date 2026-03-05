@@ -109,6 +109,7 @@ function createWindow() {
     y: windowState.y,
     minWidth: 1080,
     minHeight: 600,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
     }
