@@ -73,6 +73,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - name: Install flatpak dependencies
-      run: sudo apt-get update && sudo apt-get install -y flatpak-builder eu-strip
+      run: sudo apt-get update && sudo apt-get install -y flatpak-builder elfutils
     - run: npm ci
     - run: npm run publish
