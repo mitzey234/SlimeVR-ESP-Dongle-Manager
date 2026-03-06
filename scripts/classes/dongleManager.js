@@ -94,7 +94,10 @@ class DongleManager extends Manager {
     }
 
     async disconnect () {
+        this.sendCommand('scoff');
         super.disconnect();
+        this.dongleContainer.clearPairedTrackers();
+        this.dongleContainer.clearTrackers();
     }
 
     initInterval;
