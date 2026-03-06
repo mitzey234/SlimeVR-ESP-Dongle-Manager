@@ -1,5 +1,6 @@
 import Confirmation from "./modals/confirmationModal.js";
 import CustomInputModal from "./modals/inputModal.js";
+import Waiting from "./modals/waitingModal.js";
 
 class Manager {
     /** @type {import("./main.js")["default"]["prototype"]} */
@@ -52,6 +53,7 @@ class Manager {
         if (this._connecting === value) return;
         this._connecting = value;
         if (value && !this.disconnected) {
+            this.connectingText.innerText = "Connecting to " + this.device.name + "...";
             this.connectingContainer.classList.remove('opacity-0', 'pointer-events-none');
             this.connectingError = null;
             this.connected = false;
@@ -145,6 +147,7 @@ class Manager {
         //Modals
         this.confirmation = new Confirmation(this);
         this.customInput = new CustomInputModal(this);
+        this.waiting = new Waiting(this);
 
         //Connecting overlay items
         this.connectingOverlay.role = "Connecting Overlay";
@@ -157,10 +160,10 @@ class Manager {
         var spinner = document.createElement('i');
         spinner.classList.add('fa-solid', 'fa-circle-notch', 'animate-spin', 'text-4xl');
         this.connectingContainer.appendChild(spinner);
-        let connectingText = document.createElement('span');
-        connectingText.classList.add('text-xl', "ml-2");
-        connectingText.innerText = "Connecting to " + this.device.name + "...";
-        this.connectingContainer.appendChild(connectingText);
+        this.connectingText = document.createElement('span');
+        this.connectingText.classList.add('text-xl', "ml-2");
+        this.connectingText.innerText = "Connecting to " + this.device.name + "...";
+        this.connectingContainer.appendChild(this.connectingText);
         this.connectingOverlay.appendChild(this.connectingContainer);
         this.element.appendChild(this.connectingOverlay);
 
@@ -207,12 +210,16 @@ class Manager {
         console.log('Switched to device:', this.device.name);
     }
 
+    async onSwitchAway() {
+        console.log('Switched away from device:', this.device.name);
+    }
+
     async startReaderLoop () {
         while (this.device.port.readable && !this.exitLoop) {
-            const reader = this.device.port.readable.getReader();
+            this.reader = this.device.port.readable.getReader();
             try {
                 while (true && !this.exitLoop) {
-                    const { value, done } = await reader.read();
+                    const { value, done } = await this.reader.read();
                     if (done) break;
                     let data = this.dataBuffer;
                     value.forEach(byte => {
@@ -227,7 +234,7 @@ class Manager {
             } catch (error) {
                 console.error('Error in reader loop:', error, this.device);
             } finally {
-                reader.releaseLock();
+                this.reader.releaseLock();
             }
         }
     }
@@ -277,6 +284,30 @@ class Manager {
         }
         this.startReaderLoop();
         return true;
+    }
+
+    async disconnect () {
+        this.exitLoop = true;
+        if (this.device.port.readable) {
+            //The device is connected, we should try to close it gracefully
+            try {
+                this.reader.releaseLock();
+            } catch (error) {
+                console.error('Error releasing reader lock:', error);
+            }
+            try {
+                await this.device.port.close();
+                console.log('Port closed successfully for:', this.device.name);
+            } catch (error) {
+                console.error('Error closing port:', error);
+            }
+        }
+        if (this.main.currentDevice === this.device) this.main.currentDevice = null;
+        this.overlay = true;
+        this.connecting = false;
+        this.connectingError = null;
+        this.disconnected = false;
+        this.device.deviceElement.status = "disconnected";
     }
 }
 

@@ -372,6 +372,13 @@ class DongleContainer {
             }
         });
         this.buttonContainer.appendChild(this.factoryResetButton);
+
+        this.disconnectButton = document.createElement('button');
+        this.disconnectButton.classList.add('bg-gray-500', 'hover:bg-gray-700', 'active:bg-gray-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer", "outline-none", "ring-0");
+        this.disconnectButton.innerText = "Disconnect";
+        this.disconnectButton.addEventListener('click', this.manager.disconnect.bind(this.manager));
+        this.buttonContainer.appendChild(this.disconnectButton);
+
         managementPanel.appendChild(this.buttonContainer);
         this.element.appendChild(managementPanel);
 

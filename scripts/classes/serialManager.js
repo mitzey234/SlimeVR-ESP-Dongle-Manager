@@ -25,6 +25,7 @@ class SerialManager extends Manager {
         //Show esploader related buttons
         this.serialContainer.connectESPTool.classList.toggle('hidden', value);
         this.serialContainer.returnToFirmware.classList.toggle('hidden', !value);
+        this.serialContainer.eraseFlashButton.classList.toggle('hidden', !value);
     }
 
     constructor(main, device) {
@@ -54,7 +55,16 @@ class SerialManager extends Manager {
     }
 
     onSwitch () {
+        //Scroll terminal to bottom when switching to it
+        if (this.scrollToBottomOnSwitchAway) {
+            this.terminal.messageContainer.scrollTop = this.terminal.messageContainer.scrollHeight;
+            this.scrollToBottomOnSwitchAway = false;
+        }
+    }
 
+    onSwitchAway () {
+        super.onSwitchAway();
+        if (this.terminal.scrolledToBottom) this.scrollToBottomOnSwitchAway = true;
     }
 
     async connect () {
@@ -77,6 +87,7 @@ class SerialManager extends Manager {
 
     async connectESPTool () {
         this.exitLoop = true; // Stop any ongoing loops
+        this.reader.releaseLock(); // Release the reader lock if held
 
         this.connecting = true;
         this.overlay = true;
@@ -95,16 +106,17 @@ class SerialManager extends Manager {
         try {
             await esploader.initialize();
         } catch (err) {
-            // Not ESP32-S2 or other error
             try {
                 await esploader.disconnect();
+                await this.device.port.open({ baudRate: 115200 });
             } catch (disconnectErr) {
                 // Ignore disconnect errors
+                console.error('Failed to disconnect after failed ESPTool connection:', disconnectErr);
             }
             this.exitLoop = false;
             this.connecting = false;
             this.overlay = false;
-            this.connectOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            this.terminal.addMessage("Failed to connect to ESPTool. Make sure your device is in bootloader mode and try again. Otherwise this device might not be compatible with the ESPTool-based flasher\nError details:\n" + err.message);
             console.error('Failed to connect ESPTool:', err);
             this.startReaderLoop();
             this.device.deviceElement.status = "connected";
@@ -112,11 +124,17 @@ class SerialManager extends Manager {
         }
         this.exitLoop = false;
         this.device.name = esploader.chipName;
+        this.connectingText.innerText = "Connecting to " + this.device.name + "...";
         try {
             this.serialContainer.macAddress = await esploader.getMacAddress();
          } catch (err) {
             console.error('Failed to get MAC address:', err);
         }
+
+        let info = this.device.port.getInfo();
+
+        const e = this.esploader.detectUSBSerialChip(info.usbVendorId, info.usbProductId);
+        if (e) this.device.deviceElement.subtext1 = e.name;
 
         this.espStub = await esploader.runStub();
 
@@ -126,6 +144,8 @@ class SerialManager extends Manager {
             console.log(`Detected flash size: ${this.espStub.flashSize} (${flashSizeBytes} bytes)`);
         }
         this.esploaderConnected = true;
+
+        console.log(this.espStub.getBootloaderOffset());
     }
 
     async returnToFirmware () {
@@ -142,6 +162,28 @@ class SerialManager extends Manager {
                 // Ignore disconnect errors
             }
         }
+    }
+
+    async disconnect () {
+        if (this.esploaderConnected) {
+            this.waiting.waiting("Disconnecting", "Please wait while we disconnect from the device", true, false);
+            await this.espStub.enterConsoleMode();
+            await this.esploader.disconnect();
+            await this.esploader.disconnect();
+            this.esploaderConnected = false;
+            this.waiting.complete();
+        }
+        super.disconnect();
+        this.connectOverlay.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    async eraseFlash () {
+        if (!this.espStub) return;
+        this.waiting.waiting("Erasing flash...", "This may take a while, please wait", true, false);
+        let stamp = Date.now();
+        await this.espStub.eraseFlash();
+        console.log("Finished. Took " + (Date.now() - stamp) + "ms to erase.");
+        this.waiting.complete();
     }
 }
 

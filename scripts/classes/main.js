@@ -57,10 +57,13 @@ class Main {
     set currentDevice (device) {
         if (this._currentDevice === device) return;
         if (this._currentDevice != null) {
-            this._currentDevice.active = false;
-            if (this._currentDevice.manager.disconnected) {
+            if (!this._currentDevice.manager.device.port.connected) {
+                console.log('Removing device from list:', this._currentDevice.name);
                 this._currentDevice.manager.element.remove();
+            } else {
+                this._currentDevice.manager.onSwitchAway();
             }
+            this._currentDevice.active = false;
         }
         this._currentDevice = device;
         if (device != null) {

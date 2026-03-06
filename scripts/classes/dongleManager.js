@@ -67,6 +67,16 @@ class DongleManager extends Manager {
         if (!this.device.port.writable || !this.device.port.readable) {
             await this.connect();
         }
+        //Scroll terminal to bottom when switching to it
+        if (this.scrollToBottomOnSwitchAway) {
+            this.terminal.messageContainer.scrollTop = this.terminal.messageContainer.scrollHeight;
+            this.scrollToBottomOnSwitchAway = false;
+        }
+    }
+
+    onSwitchAway () {
+        super.onSwitchAway();
+        if (this.terminal.scrolledToBottom) this.scrollToBottomOnSwitchAway = true;
     }
 
     /**
@@ -81,6 +91,10 @@ class DongleManager extends Manager {
             this.element.dispatchEvent(new CustomEvent('console-output', { detail: output }));
         }
         this.dataBuffer = [];
+    }
+
+    async disconnect () {
+        super.disconnect();
     }
 
     initInterval;

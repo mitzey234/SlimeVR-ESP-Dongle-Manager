@@ -13,6 +13,10 @@ class Terminal {
 
     scrollToBottomButton = document.createElement('button');
 
+    get scrolledToBottom() {
+        return this.messageContainer.scrollHeight - this.messageContainer.scrollTop - this.messageContainer.clientHeight < 100;
+    }
+
     /**
      * 
      * @param {import("./manager").default} manager 
@@ -81,7 +85,7 @@ class Terminal {
         messageElement.appendChild(contentElement);
         this.messageContainer.appendChild(messageElement);
         // Only scroll if user is near the bottom (within 100px)
-        if (this.messageContainer.scrollHeight - this.messageContainer.scrollTop - this.messageContainer.clientHeight < 100) {
+        if (this.scrolledToBottom) {
             this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
         }
         // Remove the first message if there are more than 1000 messages
