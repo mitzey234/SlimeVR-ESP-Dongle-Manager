@@ -58,6 +58,24 @@ class SerialContainer {
         });
         this.buttonContainer.appendChild(this.eraseFlashButton);
 
+
+        this.dongleFirmwareButton = document.createElement('button');
+        this.dongleFirmwareButton.classList.add('bg-purple-500', 'hover:bg-purple-700', 'active:bg-purple-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer", "outline-none", "ring-0", "hidden");
+        this.dongleFirmwareButton.innerText = "Dongle Firmware Flash";
+        this.dongleFirmwareButton.addEventListener('click', () => {
+            //TODO 
+        });
+        this.buttonContainer.appendChild(this.dongleFirmwareButton);
+
+
+        this.customFirmwareButton = document.createElement('button');
+        this.customFirmwareButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'active:bg-blue-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer", "outline-none", "ring-0", "hidden");
+        this.customFirmwareButton.innerText = "Custom Firmware Flash";
+        this.customFirmwareButton.addEventListener('click', () => {
+            this.manager.customFirmwareModal.open();
+        });
+        this.buttonContainer.appendChild(this.customFirmwareButton);
+
         
         this.disconnectButton = document.createElement('button');
         this.disconnectButton.classList.add('bg-gray-500', 'hover:bg-gray-700', 'active:bg-gray-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer", "outline-none", "ring-0");

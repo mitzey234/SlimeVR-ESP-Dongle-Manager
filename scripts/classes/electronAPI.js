@@ -10,7 +10,8 @@ let InvokeBinds = {
     devTools: "window:devTools",
     updateApp: "app:update",
     checkForUpdates: "app:checkForUpdates",
-    DEBUG: "app:DEBUG"
+    DEBUG: "app:DEBUG",
+    readFile: "file:read"
 }
 
 class ElectronAPI {
@@ -85,6 +86,10 @@ class ElectronAPI {
 
     DEBUG() {
         return window[API_NAME].DEBUG();
+    }
+
+    readFile(filePath) {
+        return window[API_NAME].readFile(filePath);
     }
 }
 

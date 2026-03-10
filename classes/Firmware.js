@@ -39,9 +39,31 @@ class Firmware {
             }
         }
 
-        // Simple unzip implementation
+        // Check uncompressed size before extracting (protect against zip bombs)
+        console.log('Checking archive size...');
+        const maxUncompressedSize = 100 * 1024 * 1024; // 100MB
+        
+        try {
+            const directory = await unzip.Open.file(this.compressedPath);
+            let totalUncompressedSize = 0;
+            let fileCount = 0;
+            for (const file of directory.files) {
+                totalUncompressedSize += file.uncompressedSize;
+                fileCount++;
+                if (totalUncompressedSize > maxUncompressedSize) {
+                    throw new Error(`Archive exceeds maximum size: ${(totalUncompressedSize / 1024 / 1024).toFixed(2)}MB > 100MB`);
+                } else if (fileCount > 1000) {
+                    throw new Error(`Archive contains too many files: ${fileCount} > 1000`);
+                }
+            }
+        } catch (error) {
+            console.error('Archive check failed:', error.message);
+            return -8;
+        }
+
+        // Extract the archive
         let stream = fs.createReadStream(this.compressedPath).pipe(unzip.Extract({ path: this.path }));
-        console.log('Decompressing firmware...');
+        console.log('Decompressing...');
         let completionPromise = new Promise((resolve, reject) => {
             stream.on('close', resolve);
             stream.on('error', reject);
@@ -59,9 +81,9 @@ class Firmware {
             let offsets;
             try {
                 offsets = JSON.parse(fs.readFileSync(path.join(this.path, 'offsets.json'), 'utf-8'));
-                this.bootloaderOffset = offsets['bootloader.bin'] || this.bootloaderOffset;
-                this.partitionsOffset = offsets['partitions.bin'] || this.partitionsOffset;
-                this.firmwareOffset = offsets['firmware.bin'] || this.firmwareOffset;
+                this.bootloaderOffset = offsets['bootloader.bin'] ?? this.bootloaderOffset;
+                this.partitionsOffset = offsets['partitions.bin'] ?? this.partitionsOffset;
+                this.firmwareOffset = offsets['firmware.bin'] ?? this.firmwareOffset;
                 delete offsets['bootloader.bin'];
                 delete offsets['partitions.bin'];
                 delete offsets['firmware.bin'];
@@ -93,6 +115,12 @@ class Firmware {
                 if (!file) continue;
             }
             file.data = fs.readFileSync(file.path);
+        }
+
+        //If no firmware.bin is present, we can't flash, so return an error
+        if (!this.files['firmware.bin']) {
+            console.error('No firmware.bin found in the archive, cannot proceed with flashing.');
+            return -7;
         }
         return true;
     }

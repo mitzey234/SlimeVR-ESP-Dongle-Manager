@@ -3,6 +3,7 @@ import Terminal from "./terminal.js";
 import SerialContainer from "./serialContainer.js";
 import { ESPLoader } from "../esptool.js";
 import parseFlashSize from "./parseFlashSize.js";
+import CustomFirmwareFlashModal from "./modals/customFirmwareFlashModal.js";
 
 class SerialManager extends Manager {
 
@@ -26,6 +27,8 @@ class SerialManager extends Manager {
         this.serialContainer.connectESPTool.classList.toggle('hidden', value);
         this.serialContainer.returnToFirmware.classList.toggle('hidden', !value);
         this.serialContainer.eraseFlashButton.classList.toggle('hidden', !value);
+        this.serialContainer.customFirmwareButton.classList.toggle('hidden', !value);
+        this.serialContainer.dongleFirmwareButton.classList.toggle('hidden', !value);
     }
 
     constructor(main, device) {
@@ -52,6 +55,8 @@ class SerialManager extends Manager {
         this.terminal = new Terminal(this, device);
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-1/2');
+
+        this.customFirmwareModal = new CustomFirmwareFlashModal(this);
     }
 
     onSwitch () {
@@ -144,6 +149,8 @@ class SerialManager extends Manager {
             console.log(`Detected flash size: ${this.espStub.flashSize} (${flashSizeBytes} bytes)`);
         }
         this.esploaderConnected = true;
+
+        this.serialContainer.dongleFirmwareButton.classList.toggle('hidden', !(this.esploader.chipName === "ESP32-S2" || this.esploader.chipName === "ESP32-S3"));
 
         console.log(this.espStub.getBootloaderOffset());
     }

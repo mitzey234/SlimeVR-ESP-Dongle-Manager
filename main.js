@@ -258,6 +258,18 @@ app.whenReady().then(() => {
     return DEBUG;
   });
 
+  ipcMain.handle('file:read', async (event, filePath) => {
+    try {
+      const size = fs.statSync(filePath).size;
+      if (size > 50 * 1024 * 1024) throw new Error(`File is too large to read: ${(size / 1024 / 1024).toFixed(2)}MB > 50MB`);
+      const data = fs.readFileSync(filePath);
+      return { name: path.basename(filePath), size, data };
+    } catch (err) {
+      console.error('Error reading file:', err);
+      throw err;
+    }
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -266,3 +278,6 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
+
+let test = new Firmware("c:\\Users\\Alexander\\Desktop\\firmware.zip");
+test.parse();
