@@ -22,6 +22,10 @@ class DongleContainer {
     /** @type {Map<string, import("./pairedTracker.js")["default"]["prototype"]>} */
     pairedTrackers = new Map();
 
+    get isLatestFirmwareVersion () {
+        return this.manager.main.firmwareVersion == this.firmwareVersion;
+    }
+
     _firmwareVersion;
     get firmwareVersion() {
         return this._firmwareVersion;
@@ -31,13 +35,7 @@ class DongleContainer {
         if (this._firmwareVersion === value) return;
         this._firmwareVersion = value;
         this.firmwareText.innerText = `Version: ${this._firmwareVersion}`;
-        if (this.isLatestFirmwareVersion()) {
-            this.checkForUpdatesIcon.classList.add('hidden');
-            this.updateIcon.classList.add('hidden');
-        } else {
-            this.checkForUpdatesIcon.classList.remove('hidden');
-            this.updateIcon.classList.remove('hidden');
-        }
+        this.checkUpdateIcon();
         this.manager.device.deviceElement.subtext1 = `Version: ${this._firmwareVersion}`;
     }
 
@@ -175,17 +173,25 @@ class DongleContainer {
         this.firmwareText.innerText = `Version: ${this.device.firmwareVersion}`;
         firmwareMetric.appendChild(this.firmwareText);
         this.checkForUpdatesIcon = document.createElement('i');
-        this.checkForUpdatesIcon.classList.add('fa-solid', 'fa-arrow-rotate-right', 'text-sm', '2xl:text-md', 'text-blue-500', "hover:text-blue-700", "active:text-blue-900", 'ml-2', "cursor-pointer", "transition", "duration-200", "ease-in-out", "hidden");
+        this.checkForUpdatesIcon.classList.add('fa-solid', 'fa-arrow-rotate-right', 'text-sm', '2xl:text-md', 'text-blue-500', "hover:text-blue-700", "active:text-blue-900", 'ml-2', "cursor-pointer", "transition", "duration-200", "ease-in-out", "hidden!");
         this.checkForUpdatesIcon.title = "Check for updates";
         this.checkForUpdatesIcon.addEventListener('click', (e) => this.manager.checkForFirmwareUpdates(e));
         firmwareMetric.appendChild(this.checkForUpdatesIcon);
         this.updateIcon = document.createElement('i');
-        this.updateIcon.classList.add('fa-solid', 'fa-circle-up', 'text-sm', '2xl:text-md', 'text-green-500', "hover:text-green-700", "active:text-green-900", 'ml-2', "cursor-pointer", "transition", "duration-200", "ease-in-out", "hidden");
+        this.updateIcon.classList.add('fa-solid', 'fa-circle-up', 'text-sm', '2xl:text-md', 'text-green-500', "hover:text-green-700", "active:text-green-900", 'ml-2', "cursor-pointer", "transition", "duration-200", "ease-in-out", "hidden!");
         this.updateIcon.title = "Update firmware";
-        this.updateIcon.addEventListener('click', () => {
-            if (this.isLatestFirmwareVersion()) return;
-            //TODO: Implement firmware update process
+        this.updateIcon.addEventListener('click', async (event) => {
+            if (event.shiftKey) return this.manager.checkForFirmwareUpdates(event);
+            if (this.isLatestFirmwareVersion) return;
+            let devices = await this.manager.main.electronAPI.getAvailableFiles(this.manager.main.firmwareVersion);
+            if (devices.includes(this.boardName)) {
+                let result = await this.manager.confirmation.confirm("Firmware Update Available", `A new firmware version (${this.manager.main.firmwareVersion}) is available for your device (currently running ${this.firmwareVersion})\nDo you want to update now?`, "Yes, update", "No, later", false);
+                if (result) await this.manager.updateFirmware();
+            } else {
+                this.manager.warning.confirm("Firmware Not Found", "The firmware your dongle is running is out of date (" + this.firmwareVersion + " != " + this.manager.main.firmwareVersion + ")\nThe firmware file for this device board is not currently available\nThis board may not be supported at this time so auto updates are not available\nBoard Type: "+this.boardName, "OK");
+            }
         });
+        firmwareMetric.appendChild(this.updateIcon);
         metricsContainer.appendChild(firmwareMetric);
 
         // Dongle mac address
@@ -240,7 +246,6 @@ class DongleContainer {
             if (channel != null) {
                 this.manager.sendCommand("setchannel " + channel);
             }
-            // TODO: Prompt user for new channel and send command to dongle to change it
         });
         channelMetric.appendChild(this.channelText);
         metricsContainer.appendChild(channelMetric);
@@ -416,6 +421,11 @@ class DongleContainer {
         }
     }
 
+    checkUpdateIcon() {
+        this.checkForUpdatesIcon.classList.toggle('hidden!', !this.isLatestFirmwareVersion);
+        this.updateIcon.classList.toggle('hidden!', this.isLatestFirmwareVersion);
+    }
+
     /** @param {import("./messages/initMessage.js")["default"]["prototype"]} message */
     init (message) {
         this.device.name = message.productName;
@@ -428,6 +438,7 @@ class DongleContainer {
         this.channel = message.channel;
         this.manager.pairing = message.pairingMode;
         this.manager.scanningEnvironment = message.scanningEnvironment;
+        this.boardName = message.boardName;
         this.update();
     }
 
@@ -576,11 +587,6 @@ class DongleContainer {
 
     sortTrackers() {
         Array.from(this.trackers.values()).sort((a, b) => a.trackerId - b.trackerId).forEach((tracker, index) => tracker.element.style.order = index);
-    }
-
-    isLatestFirmwareVersion() {
-        //Implement this later when I add firmware updates
-        return true;
     }
 }
 

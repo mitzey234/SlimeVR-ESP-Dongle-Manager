@@ -3,6 +3,9 @@ const path = require('node:path');
 const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
 const inspector = require('inspector');
+const FirmwareUpdate = require('./classes/FirmwareUpdate.js');
+
+let updater = new FirmwareUpdate(app);
 
 var handleStartupEvent = function() {
   if (process.platform !== 'win32') {
@@ -195,7 +198,7 @@ autoUpdater.on('update-not-available', (e) => {
   checkingForUpdates = false;
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   let window = createWindow();
 
   ipcMain.handle('dialog:openFile', handleFileOpen)
@@ -270,6 +273,26 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('app:checkForFirmwareUpdates', async () => {
+    try {
+      const result = await updater.checkForUpdates();
+      return result;
+    } catch (err) {
+      console.error('Error checking for firmware updates:', err);
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('app:getAvailableFiles', (event, tag) => {
+    try {
+      const files = updater.getAvailableFiles(tag);
+      return files;
+    } catch (err) {
+      console.error('Error getting available files:', err);
+      return { error: err.message };
+    }
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -278,6 +301,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
-
-let test = new Firmware("c:\\Users\\Alexander\\Desktop\\firmware.zip");
-test.parse();

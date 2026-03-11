@@ -27,7 +27,7 @@ class Main {
     /** @type {Array<{res: Function, rej: Function}>} */
     hooks = [];
 
-    /** @type {Map<string, import("./serialDevice.js")["default"]["SerialDevice"]>} */
+    /** @type {Map<string, import("./serialDevice.js")["default"]["prototype"]>} */
     serialDevices = new Map();
 
     /** @type {import("../esptool.js")} */
@@ -37,6 +37,9 @@ class Main {
     electronAPI;
 
     consolePrefix = "[SC]";
+
+    /** @type {null | {mac: string, tag: string, board: string}} */
+    pendingFirmwareUpdate;
 
     /** @type {SerialDevice} */
     _currentDevice = null;
@@ -121,6 +124,19 @@ class Main {
         }
     }
 
+    _firmwareVersion = null;
+    get firmwareVersion() {
+        return this._firmwareVersion;
+    }
+
+    set firmwareVersion(value) {
+        if (this._firmwareVersion === value) return;
+        this._firmwareVersion = value;
+        this.serialDevices.forEach(device => {
+            if (device.constructor.name === "ProtonDongleDevice") device.manager.dongleContainer.checkUpdateIcon();
+        });
+    }
+
     constructor() {
         this.start();
     }
@@ -172,6 +188,12 @@ class Main {
             refreshBtn.remove();
         }
         this.pageTitle = `SlimeVR Dongle Manager v${await this.electronAPI.getAppVersion()}`;
+        let result = await this.electronAPI.checkForFirmwareUpdates();
+        if (result.error) console.error('Error checking for firmware updates:', result.error);
+        else if (result.tag) {
+            this.firmwareVersion = result.tag;
+            console.log('Latest firmware version:', this.firmwareVersion);
+        }
         window.navigator.serial.addEventListener('connect', this.onDeviceConnected.bind(this));
         let ports = await window.navigator.serial.getPorts();
         await this.sleep(500); //Give the UI some time to load before processing ports

@@ -1,6 +1,7 @@
 import Confirmation from "./modals/confirmationModal.js";
 import CustomInputModal from "./modals/inputModal.js";
 import Waiting from "./modals/waitingModal.js";
+import Warning from "./modals/WarningModal.js";
 
 class Manager {
     /** @type {import("./main.js")["default"]["prototype"]} */
@@ -148,6 +149,7 @@ class Manager {
         this.confirmation = new Confirmation(this);
         this.customInput = new CustomInputModal(this);
         this.waiting = new Waiting(this);
+        this.warning = new Warning(this);
 
         //Connecting overlay items
         this.connectingOverlay.role = "Connecting Overlay";

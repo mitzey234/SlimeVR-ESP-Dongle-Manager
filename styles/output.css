@@ -248,6 +248,9 @@
   .pointer-events-none {
     pointer-events: none;
   }
+  .visible {
+    visibility: visible;
+  }
   .absolute {
     position: absolute;
   }
@@ -355,6 +358,9 @@
   }
   .hidden {
     display: none;
+  }
+  .hidden\! {
+    display: none !important;
   }
   .table {
     display: table;

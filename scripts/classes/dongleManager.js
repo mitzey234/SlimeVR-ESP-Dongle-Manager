@@ -259,10 +259,15 @@ class DongleManager extends Manager {
             console.log('Custom firmware upload triggered');
             return;
         }
-        //TODO: Implement firmware update checking
         this.dongleContainer.checkForUpdatesIcon.classList.add('animate-spin');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        let date = Date.now();
+        let result = await this.main.electronAPI.checkForFirmwareUpdates();
+        let delta = Date.now() - date;
+        await new Promise(resolve => setTimeout(resolve, Math.max(1000 - delta, 0))); // Ensure the spinner is visible for at least 1000ms to avoid flickering
+        if (result.error) console.error('Error checking for firmware updates:', result.error);
+        else if (result.tag) this.main.firmwareVersion = result.tag;
         this.dongleContainer.checkForUpdatesIcon.classList.remove('animate-spin');
+        this.dongleContainer.checkUpdateIcon();
     }
 }
 

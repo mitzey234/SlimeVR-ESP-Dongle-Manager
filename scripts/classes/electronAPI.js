@@ -11,7 +11,9 @@ let InvokeBinds = {
     updateApp: "app:update",
     checkForUpdates: "app:checkForUpdates",
     DEBUG: "app:DEBUG",
-    readFile: "file:read"
+    readFile: "file:read",
+    checkForFirmwareUpdates: "app:checkForFirmwareUpdates",
+    getAvailableFiles: "app:getAvailableFiles"
 }
 
 class ElectronAPI {
@@ -90,6 +92,14 @@ class ElectronAPI {
 
     readFile(filePath) {
         return window[API_NAME].readFile(filePath);
+    }
+
+    checkForFirmwareUpdates() {
+        return window[API_NAME].checkForFirmwareUpdates();
+    }
+
+    getAvailableFiles(tag) {
+        return window[API_NAME].getAvailableFiles(tag);
     }
 }
 
