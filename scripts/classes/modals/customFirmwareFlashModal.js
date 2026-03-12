@@ -138,7 +138,6 @@ class CustomFirmwareFlashModal extends Modal {
         flashManualDesc.innerText = "Use the manual flashing interface to select firmware and offsets";
         this.flashManualOption.appendChild(flashManualDesc);
         this.flashManualOption.addEventListener('click', () => {
-            //TODO: Implement manual flashing interface
             this.errorMessage.classList.add('hidden');
             this.flashType = 2;
         });

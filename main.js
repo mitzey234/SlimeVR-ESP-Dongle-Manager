@@ -293,6 +293,16 @@ app.whenReady().then(async () => {
     }
   });
 
+  ipcMain.handle('app:getFirmwareArchive', async (event, tag, board) => {
+    try {
+      const archive = await updater.getFirmwareArchive(tag, board);
+      return archive;
+    } catch (err) {
+      console.error('Error getting firmware archive:', err);
+      return { error: err.message };
+    }
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

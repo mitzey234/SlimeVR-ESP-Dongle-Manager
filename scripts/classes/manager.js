@@ -24,6 +24,8 @@ class Manager {
 
     disconnectedContainer = document.createElement('div');
 
+    updatingContainer = document.createElement('div');
+
     exitLoop = false;
 
     allowSerialCom = false;
@@ -90,16 +92,36 @@ class Manager {
     set disconnected(value) {
         if (this._disconnected === value) return;
         this._disconnected = value;
-        if (value) {
+        if (value && this.updating != true) {
+            this.overlay = true;
+            this.connecting = false;
+            this.connectingError = null;
+            this.connected = false;
+            if (this.connectOverlay != null) this.connectOverlay.classList.add('opacity-0', 'pointer-events-none');
+            this.device.deviceElement.status = "disconnected";
+            this.disconnectedContainer.classList.remove('opacity-0', 'pointer-events-none');
+        } else if (this.updating) {
             this.overlay = true;
             this.connecting = false;
             this.connectingError = null;
             this.connected = false;
             this.device.deviceElement.status = "disconnected";
-            this.disconnectedContainer.classList.remove('opacity-0', 'pointer-events-none');
         } else {
             this.disconnectedContainer.classList.add('opacity-0', 'pointer-events-none');
         }
+    }
+
+    _updating = false;
+    get updating() {
+        return this._updating;
+    }
+
+    set updating(value) {
+        if (this._updating === value) return;
+        this._updating = value;
+        this.overlay = value;
+        this.updatingContainer.classList.toggle('opacity-0', !value);
+        this.updatingContainer.classList.toggle('pointer-events-none', !value);
     }
 
     /** @type {import("./modals/modal.js")["default"]["prototype"]} */
@@ -205,6 +227,17 @@ class Manager {
         this.disconnectedContainer.appendChild(disconnectText);
         this.connectingOverlay.appendChild(this.disconnectedContainer);
 
+        //Updating Overlay elements
+        this.updatingContainer.classList.add('flex', 'flex-col', 'items-center', 'justify-center', 'gap-4', 'select-none', "opacity-0", "pointer-events-none", "absolute", "transition", "duration-200", "ease-in-out");
+        var updatingIcon = document.createElement('i');
+        updatingIcon.classList.add('fa-solid', 'fa-spinner', 'text-4xl', 'text-white', 'animate-spin');
+        this.updatingContainer.appendChild(updatingIcon);
+        var updatingText = document.createElement('span');
+        updatingText.classList.add('text-2xl', 'text-white');
+        updatingText.innerText = this.device.name + " is updating firmware, please wait...";
+        this.updatingContainer.appendChild(updatingText);
+        this.connectingOverlay.appendChild(this.updatingContainer);
+
         this.main.contentContainerElement.appendChild(this.element);
     }
 
@@ -273,12 +306,13 @@ class Manager {
         return true;
     }
 
-    async connect () {
+    async connect (additionalRequired = false) {
         console.log('Opening port to:', this.device.name);
         this.exitLoop = false;
         this.connecting = true;
         try {
             await this.device.port.open({baudRate: 115200});
+            if (!additionalRequired) this.connected = true;
         } catch (error) {
             this.connectingError = error.message;
             console.error('Failed to open port:', error);

@@ -12,6 +12,9 @@ class DongleManager extends Manager {
     parser = new SerialComParser(this);
     socketComHandler = new SocketComHandler(this);
 
+    /** @type {import("./protonDongleDevice.js")["default"]["prototype"]} */
+    device;
+
     _pairing = false;
     get pairing() {
         return this._pairing;
@@ -50,6 +53,7 @@ class DongleManager extends Manager {
     
     constructor(main, device) {
         super(main, device);
+        this.device = device;
         this.allowSerialCom = true;
         this.dongleContainer = new DongleContainer(this, device);
         this.terminal = new Terminal(this, device);
@@ -115,7 +119,7 @@ class DongleManager extends Manager {
     }
 
     async connect () {
-        let result = await super.connect();
+        let result = await super.connect(true);
         if (!result) return;
         this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
         this.initInterval = setInterval(this.sendInit.bind(this), 1000);
@@ -255,8 +259,35 @@ class DongleManager extends Manager {
 
     async checkForFirmwareUpdates (e) {
         if (e.shiftKey) {
-            //TODO: Allow users to upload custom firmware for advanced users and developers, maybe with a warning about the risks of bricking their device
-            console.log('Custom firmware upload triggered');
+            if (this.selectingFileLock) return;
+            this.selectingFileLock = true;
+            let result = await this.main.electronAPI.openFile([{ name: 'Compressed', extensions: ['zip'] }], ['openFile', 'dontAddToRecent']);
+            this.selectingFileLock = false;
+            if (result == null) return;
+            let firmware = await this.main.electronAPI.readFirmwareArchive(result);
+            if (typeof firmware === "number") {
+                let errorMessage = "An unknown error occurred while reading the firmware archive: " + firmware;
+                if (firmware === -1) {
+                    errorMessage = "Error removing existing temporary firmware directory";
+                } else if (firmware === -2) {
+                    errorMessage = "Error creating temporary firmware directory";
+                } else if (firmware === -3) {
+                    errorMessage = "File not found or inaccessible";
+                } else if (firmware === -4) {
+                    errorMessage = "Error during firmware decompression";
+                } else if (firmware === -5) {
+                    errorMessage = "Error reading offsets.json";
+                } else if (firmware === -6) {
+                    errorMessage = "No valid firmware files found in the archive";
+                } else if (firmware === -7) {
+                    errorMessage = "The archive contains no firmware.bin file";
+                } else if (firmware === -8) {
+                    errorMessage = "Either the archive is too large, contains too many files, or isn't valid";
+                }
+                this.warning.confirm("Failed to read firmware archive", errorMessage, "OK", true);
+                return;
+            }
+            this.device.updateFirmware(null, firmware);
             return;
         }
         this.dongleContainer.checkForUpdatesIcon.classList.add('animate-spin');

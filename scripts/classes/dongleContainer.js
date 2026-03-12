@@ -186,7 +186,7 @@ class DongleContainer {
             let devices = await this.manager.main.electronAPI.getAvailableFiles(this.manager.main.firmwareVersion);
             if (devices.includes(this.boardName)) {
                 let result = await this.manager.confirmation.confirm("Firmware Update Available", `A new firmware version (${this.manager.main.firmwareVersion}) is available for your device (currently running ${this.firmwareVersion})\nDo you want to update now?`, "Yes, update", "No, later", false);
-                if (result) await this.manager.updateFirmware();
+                if (result) await this.device.updateFirmware();
             } else {
                 this.manager.warning.confirm("Firmware Not Found", "The firmware your dongle is running is out of date (" + this.firmwareVersion + " != " + this.manager.main.firmwareVersion + ")\nThe firmware file for this device board is not currently available\nThis board may not be supported at this time so auto updates are not available\nBoard Type: "+this.boardName, "OK");
             }

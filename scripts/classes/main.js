@@ -38,11 +38,14 @@ class Main {
 
     consolePrefix = "[SC]";
 
-    /** @type {null | {mac: string, tag: string, board: string}} */
+    /** @type {null | {mac: string, tag: string, board: string, firmware: object | undefined}} */
     pendingFirmwareUpdate;
 
     /** @type {SerialDevice} */
     _currentDevice = null;
+
+    //Tells the manager to automatically open the next dongle that connects, used for firmware updates. Will be set to false after 10 seconds to prevent accidentally opening random devices
+    autoOpen = false;
 
     deviceContainerElement = document.getElementById('deviceSelector');
 
@@ -221,15 +224,62 @@ class Main {
         if (portInfo.usbVendorId == 4617 && portInfo.usbProductId == 30352) {
             //If running SlimeVR Dongle Firmware, vendor ID should be 4617 (0x1209) and product ID should be 30352 (0x76c8)
             console.log('SlimeVR Dongle detected');
-            new ProtonDongleDevice(this, port);
+            let device = new ProtonDongleDevice(this, port);
+            if (this.autoOpen) {
+                this.autoOpen = false;
+                this.currentDevice = device;
+            }
         } else if (portInfo.usbVendorId == 12346 && portInfo.usbProductId == 4097) {
             //If ESP in download mode, vendor ID should be 12346 (0x303a) and product ID should be 4097 (0x1001)
             console.log('ESP device in download mode detected');
-            new ESP32Device(this, port);
+            let device = new ESP32Device(this, port);
+            if (this.pendingFirmwareUpdate != null) this.tryDeviceForUpdate(device);
         } else {
             console.log('Unknown serial device detected:', portInfo);
             new UnknownDevice(this, port);
         }
+    }
+
+    /**
+     * @param {ESP32Device} device 
+     */
+    async tryDeviceForUpdate (device) {
+        try {
+            await device.manager.connect();
+            await device.manager.connectESPTool();
+            if (device.manager.serialContainer.macAddress == this.pendingFirmwareUpdate.mac) {
+                console.log('Device matches pending firmware update, starting update process');
+                let pending = this.pendingFirmwareUpdate;
+                this.pendingFirmwareUpdate = null;
+                this.currentDevice = device;
+                let firmware = pending.firmware != null ? pending.firmware : await this.electronAPI.getFirmwareArchive(pending.tag, pending.board);
+                if (typeof firmware === 'number') {
+                    console.error('Error getting firmware archive:', firmware);
+                    return;
+                }
+                device.manager.customFirmwareModal.open();
+                device.manager.customFirmwareModal.flashType = 1;
+                device.manager.customFirmwareModal.firmware = firmware;
+                await device.manager.customFirmwareModal.flash();
+                this.setAutoOpen();
+            } else {
+                console.log('Device does not match pending firmware update, disconnecting');
+            }
+        } catch (err) {
+            console.error('Error during firmware update process:', err);
+        } finally {
+            await device.manager.disconnect();
+        }
+    }
+
+    autoOpenTimeout;
+
+    setAutoOpen() {
+        this.autoOpen = true;
+        clearTimeout(this.autoOpenTimeout);
+        this.autoOpenTimeout = setTimeout(() => {
+            this.autoOpen = false;
+        }, 10000);
     }
 
     formatMacAddr(mac) {

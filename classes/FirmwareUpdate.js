@@ -362,6 +362,29 @@ class FirmwareUpdate {
         }
         return fs.readdirSync(releaseDir).filter((file) => file.toLowerCase().endsWith('.zip')).map((file) => file.replace(/\.zip$/i, ''));
     }
+
+    async getFirmwareArchive(tag, board) {
+        const releaseDir = this.getDownloadsPath(tag);
+        const fileName = `${board}.zip`;
+        const filePath = path.join(releaseDir, fileName);
+        if (!fs.existsSync(filePath)) {
+            console.warn(`[FirmwareUpdate] Requested firmware archive does not exist: ${filePath}`);
+            return -10;
+        }
+        let firmware;
+        try {
+            firmware = new Firmware(filePath);
+        } catch (error) {
+            console.error(`[FirmwareUpdate] Failed to create Firmware instance for ${filePath}:`, error);
+            return -20;
+        }
+        let result = await firmware.parse();
+        if (typeof result === 'number') {
+            console.error(`[FirmwareUpdate] Firmware archive ${filePath} failed to parse with error code ${result}`);
+            return result;
+        }
+        return firmware;
+    }
 }
 
 module.exports = FirmwareUpdate;
