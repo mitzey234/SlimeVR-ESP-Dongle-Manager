@@ -3,6 +3,9 @@ const path = require('node:path');
 const fs = require('node:fs');
 const Firmware = require('./classes/Firmware.js');
 const inspector = require('inspector');
+const FirmwareUpdate = require('./classes/FirmwareUpdate.js');
+
+let updater = new FirmwareUpdate(app);
 
 var handleStartupEvent = function() {
   if (process.platform !== 'win32') {
@@ -109,6 +112,7 @@ function createWindow() {
     y: windowState.y,
     minWidth: 1080,
     minHeight: 600,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, "scripts", 'preload.js')
     }
@@ -194,7 +198,7 @@ autoUpdater.on('update-not-available', (e) => {
   checkingForUpdates = false;
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   let window = createWindow();
 
   ipcMain.handle('dialog:openFile', handleFileOpen)
@@ -255,6 +259,58 @@ app.whenReady().then(() => {
 
   ipcMain.handle('app:DEBUG', () => {
     return DEBUG;
+  });
+
+  ipcMain.handle('file:read', async (event, filePath) => {
+    try {
+      const size = fs.statSync(filePath).size;
+      if (size > 50 * 1024 * 1024) throw new Error(`File is too large to read: ${(size / 1024 / 1024).toFixed(2)}MB > 50MB`);
+      const data = fs.readFileSync(filePath);
+      return { name: path.basename(filePath), size, data };
+    } catch (err) {
+      console.error('Error reading file:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('app:checkForFirmwareUpdates', async () => {
+    try {
+      const result = await updater.checkForUpdates();
+      return result;
+    } catch (err) {
+      console.error('Error checking for firmware updates:', err);
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('app:getAvailableFiles', (event, tag) => {
+    try {
+      const files = updater.getAvailableFiles(tag);
+      return files;
+    } catch (err) {
+      console.error('Error getting available files:', err);
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('app:getFirmwareArchive', async (event, tag, board) => {
+    try {
+      const archive = await updater.getFirmwareArchive(tag, board);
+      return archive;
+    } catch (err) {
+      console.error('Error getting firmware archive:', err);
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('app:getAvailableReleases', async (event) => {
+    try {
+      const releases = await updater.getAvailableReleases();
+      return releases;
+    } catch (err) {
+      console.error('Error getting available releases:', err);
+      return { error: err.message };
+    }
   });
 
   app.on('activate', () => {

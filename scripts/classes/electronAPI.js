@@ -10,7 +10,12 @@ let InvokeBinds = {
     devTools: "window:devTools",
     updateApp: "app:update",
     checkForUpdates: "app:checkForUpdates",
-    DEBUG: "app:DEBUG"
+    DEBUG: "app:DEBUG",
+    readFile: "file:read",
+    checkForFirmwareUpdates: "app:checkForFirmwareUpdates",
+    getAvailableFiles: "app:getAvailableFiles",
+    getFirmwareArchive: "app:getFirmwareArchive",
+    getAvailableReleases: "app:getAvailableReleases"
 }
 
 class ElectronAPI {
@@ -85,6 +90,26 @@ class ElectronAPI {
 
     DEBUG() {
         return window[API_NAME].DEBUG();
+    }
+
+    readFile(filePath) {
+        return window[API_NAME].readFile(filePath);
+    }
+
+    checkForFirmwareUpdates() {
+        return window[API_NAME].checkForFirmwareUpdates();
+    }
+
+    getAvailableFiles(tag) {
+        return window[API_NAME].getAvailableFiles(tag);
+    }
+
+    getFirmwareArchive(tag, board) {
+        return window[API_NAME].getFirmwareArchive(tag, board);
+    }
+
+    getAvailableReleases() {
+        return window[API_NAME].getAvailableReleases();
     }
 }
 

@@ -12,6 +12,9 @@ class DongleManager extends Manager {
     parser = new SerialComParser(this);
     socketComHandler = new SocketComHandler(this);
 
+    /** @type {import("./protonDongleDevice.js")["default"]["prototype"]} */
+    device;
+
     _pairing = false;
     get pairing() {
         return this._pairing;
@@ -50,13 +53,23 @@ class DongleManager extends Manager {
     
     constructor(main, device) {
         super(main, device);
+        this.device = device;
         this.allowSerialCom = true;
         this.dongleContainer = new DongleContainer(this, device);
-        this.element.appendChild(this.dongleContainer.element);
         this.terminal = new Terminal(this, device);
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-4/9');
-        this.element.appendChild(this.terminal.element);
+
+        //Force DFU mode button for when you can't get into the dongle for some reason
+        var forceDFUModeButton = document.createElement('button');
+        forceDFUModeButton.classList.add('px-4', 'py-2', 'bg-red-500', 'text-white', 'rounded', 'hover:bg-red-600', 'active:bg-red-700', 'cursor-pointer');
+        forceDFUModeButton.innerText = "Force DFU Mode";
+        forceDFUModeButton.addEventListener('click', async () => {
+            this.connecting = true;
+            await this.device.port.open({ baudRate: 115200 });
+            this.device.enterDFU();
+        });
+        this.connectingErrorCont.appendChild(forceDFUModeButton);
 
         //Modals
         this.pairedTrackersManager = new PairedTrackersManager(this);
@@ -69,6 +82,16 @@ class DongleManager extends Manager {
         if (!this.device.port.writable || !this.device.port.readable) {
             await this.connect();
         }
+        //Scroll terminal to bottom when switching to it
+        if (this.scrollToBottomOnSwitchAway) {
+            this.terminal.messageContainer.scrollTop = this.terminal.messageContainer.scrollHeight;
+            this.scrollToBottomOnSwitchAway = false;
+        }
+    }
+
+    onSwitchAway () {
+        super.onSwitchAway();
+        if (this.terminal.scrolledToBottom) this.scrollToBottomOnSwitchAway = true;
     }
 
     /**
@@ -83,6 +106,13 @@ class DongleManager extends Manager {
             this.element.dispatchEvent(new CustomEvent('console-output', { detail: output }));
         }
         this.dataBuffer = [];
+    }
+
+    async disconnect () {
+        await this.sendCommand('scoff');
+        await super.disconnect();
+        this.dongleContainer.clearPairedTrackers();
+        this.dongleContainer.clearTrackers();
     }
 
     initInterval;
@@ -100,7 +130,8 @@ class DongleManager extends Manager {
     }
 
     async connect () {
-        await super.connect();
+        let result = await super.connect(true);
+        if (!result) return;
         this.connectTimeout = setTimeout(this.onTimeout.bind(this), 5000);
         this.initInterval = setInterval(this.sendInit.bind(this), 1000);
     }
@@ -239,14 +270,46 @@ class DongleManager extends Manager {
 
     async checkForFirmwareUpdates (e) {
         if (e.shiftKey) {
-            //TODO: Allow users to upload custom firmware for advanced users and developers, maybe with a warning about the risks of bricking their device
-            console.log('Custom firmware upload triggered');
+            if (this.selectingFileLock) return;
+            this.selectingFileLock = true;
+            let result = await this.main.electronAPI.openFile([{ name: 'Compressed', extensions: ['zip'] }], ['openFile', 'dontAddToRecent']);
+            this.selectingFileLock = false;
+            if (result == null) return;
+            let firmware = await this.main.electronAPI.readFirmwareArchive(result);
+            if (typeof firmware === "number") {
+                let errorMessage = "An unknown error occurred while reading the firmware archive: " + firmware;
+                if (firmware === -1) {
+                    errorMessage = "Error removing existing temporary firmware directory";
+                } else if (firmware === -2) {
+                    errorMessage = "Error creating temporary firmware directory";
+                } else if (firmware === -3) {
+                    errorMessage = "File not found or inaccessible";
+                } else if (firmware === -4) {
+                    errorMessage = "Error during firmware decompression";
+                } else if (firmware === -5) {
+                    errorMessage = "Error reading offsets.json";
+                } else if (firmware === -6) {
+                    errorMessage = "No valid firmware files found in the archive";
+                } else if (firmware === -7) {
+                    errorMessage = "The archive contains no firmware.bin file";
+                } else if (firmware === -8) {
+                    errorMessage = "Either the archive is too large, contains too many files, or isn't valid";
+                }
+                this.warning.confirm("Failed to read firmware archive", errorMessage, "OK", true);
+                return;
+            }
+            this.device.updateFirmware(null, firmware);
             return;
         }
-        //TODO: Implement firmware update checking
         this.dongleContainer.checkForUpdatesIcon.classList.add('animate-spin');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        let date = Date.now();
+        let result = await this.main.electronAPI.checkForFirmwareUpdates();
+        let delta = Date.now() - date;
+        await new Promise(resolve => setTimeout(resolve, Math.max(1000 - delta, 0))); // Ensure the spinner is visible for at least 1000ms to avoid flickering
+        if (result.error) console.error('Error checking for firmware updates:', result.error);
+        else if (result.tag) this.main.firmwareVersion = result.tag;
         this.dongleContainer.checkForUpdatesIcon.classList.remove('animate-spin');
+        this.dongleContainer.checkUpdateIcon();
     }
 }
 

@@ -49,6 +49,22 @@ class ProtonDongleDevice extends SerialDevice {
     async reboot() {
         await this.manager.sendCommand("reboot");
     }
+
+    async updateFirmware (tag = null, firmware = null) {
+        if (this.main.pendingFirmwareUpdate != null) {
+            console.warn('Firmware update already pending, skipping new update request');
+            return;
+        }
+        this.main.pendingFirmwareUpdate = {
+            mac: this.manager.dongleContainer.macAddress,
+            tag: tag ?? this.main.firmwareVersion,
+            board: this.manager.dongleContainer.boardName
+        }
+        if (firmware != null) this.main.pendingFirmwareUpdate.firmware = firmware;
+        this.manager.connecting = false;
+        this.manager.updating = true;
+        await this.enterDFU();
+    }
 }
 
 export default ProtonDongleDevice;

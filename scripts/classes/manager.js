@@ -1,5 +1,7 @@
 import Confirmation from "./modals/confirmationModal.js";
 import CustomInputModal from "./modals/inputModal.js";
+import Waiting from "./modals/waitingModal.js";
+import Warning from "./modals/WarningModal.js";
 
 class Manager {
     /** @type {import("./main.js")["default"]["prototype"]} */
@@ -21,6 +23,8 @@ class Manager {
     connectingErrorCont = document.createElement('div');
 
     disconnectedContainer = document.createElement('div');
+
+    updatingContainer = document.createElement('div');
 
     exitLoop = false;
 
@@ -52,6 +56,7 @@ class Manager {
         if (this._connecting === value) return;
         this._connecting = value;
         if (value && !this.disconnected) {
+            this.connectingText.innerText = "Connecting to " + this.device.name + "...";
             this.connectingContainer.classList.remove('opacity-0', 'pointer-events-none');
             this.connectingError = null;
             this.connected = false;
@@ -87,16 +92,36 @@ class Manager {
     set disconnected(value) {
         if (this._disconnected === value) return;
         this._disconnected = value;
-        if (value) {
+        if (value && this.updating != true) {
+            this.overlay = true;
+            this.connecting = false;
+            this.connectingError = null;
+            this.connected = false;
+            if (this.connectOverlay != null) this.connectOverlay.classList.add('opacity-0', 'pointer-events-none');
+            this.device.deviceElement.status = "disconnected";
+            this.disconnectedContainer.classList.remove('opacity-0', 'pointer-events-none');
+        } else if (this.updating) {
             this.overlay = true;
             this.connecting = false;
             this.connectingError = null;
             this.connected = false;
             this.device.deviceElement.status = "disconnected";
-            this.disconnectedContainer.classList.remove('opacity-0', 'pointer-events-none');
         } else {
             this.disconnectedContainer.classList.add('opacity-0', 'pointer-events-none');
         }
+    }
+
+    _updating = false;
+    get updating() {
+        return this._updating;
+    }
+
+    set updating(value) {
+        if (this._updating === value) return;
+        this._updating = value;
+        this.overlay = value;
+        this.updatingContainer.classList.toggle('opacity-0', !value);
+        this.updatingContainer.classList.toggle('pointer-events-none', !value);
     }
 
     /** @type {import("./modals/modal.js")["default"]["prototype"]} */
@@ -145,6 +170,8 @@ class Manager {
         //Modals
         this.confirmation = new Confirmation(this);
         this.customInput = new CustomInputModal(this);
+        this.waiting = new Waiting(this);
+        this.warning = new Warning(this);
 
         //Connecting overlay items
         this.connectingOverlay.role = "Connecting Overlay";
@@ -157,10 +184,10 @@ class Manager {
         var spinner = document.createElement('i');
         spinner.classList.add('fa-solid', 'fa-circle-notch', 'animate-spin', 'text-4xl');
         this.connectingContainer.appendChild(spinner);
-        let connectingText = document.createElement('span');
-        connectingText.classList.add('text-xl', "ml-2");
-        connectingText.innerText = "Connecting to " + this.device.name + "...";
-        this.connectingContainer.appendChild(connectingText);
+        this.connectingText = document.createElement('span');
+        this.connectingText.classList.add('text-xl', "ml-2");
+        this.connectingText.innerText = "Connecting to " + this.device.name + "...";
+        this.connectingContainer.appendChild(this.connectingText);
         this.connectingOverlay.appendChild(this.connectingContainer);
         this.element.appendChild(this.connectingOverlay);
 
@@ -200,6 +227,17 @@ class Manager {
         this.disconnectedContainer.appendChild(disconnectText);
         this.connectingOverlay.appendChild(this.disconnectedContainer);
 
+        //Updating Overlay elements
+        this.updatingContainer.classList.add('flex', 'flex-col', 'items-center', 'justify-center', 'gap-4', 'select-none', "opacity-0", "pointer-events-none", "absolute", "transition", "duration-200", "ease-in-out");
+        var updatingIcon = document.createElement('i');
+        updatingIcon.classList.add('fa-solid', 'fa-spinner', 'text-4xl', 'text-white', 'animate-spin');
+        this.updatingContainer.appendChild(updatingIcon);
+        var updatingText = document.createElement('span');
+        updatingText.classList.add('text-2xl', 'text-white');
+        updatingText.innerText = this.device.name + " is updating firmware, please wait...";
+        this.updatingContainer.appendChild(updatingText);
+        this.connectingOverlay.appendChild(this.updatingContainer);
+
         this.main.contentContainerElement.appendChild(this.element);
     }
 
@@ -207,12 +245,16 @@ class Manager {
         console.log('Switched to device:', this.device.name);
     }
 
+    async onSwitchAway() {
+        console.log('Switched away from device:', this.device.name);
+    }
+
     async startReaderLoop () {
         while (this.device.port.readable && !this.exitLoop) {
-            const reader = this.device.port.readable.getReader();
+            this.reader = this.device.port.readable.getReader();
             try {
                 while (true && !this.exitLoop) {
-                    const { value, done } = await reader.read();
+                    const { value, done } = await this.reader.read();
                     if (done) break;
                     let data = this.dataBuffer;
                     value.forEach(byte => {
@@ -227,7 +269,7 @@ class Manager {
             } catch (error) {
                 console.error('Error in reader loop:', error, this.device);
             } finally {
-                reader.releaseLock();
+                this.reader.releaseLock();
             }
         }
     }
@@ -264,18 +306,44 @@ class Manager {
         return true;
     }
 
-    async connect () {
+    async connect (additionalRequired = false) {
         console.log('Opening port to:', this.device.name);
         this.exitLoop = false;
         this.connecting = true;
         try {
             await this.device.port.open({baudRate: 115200});
+            if (!additionalRequired) this.connected = true;
         } catch (error) {
             this.connectingError = error.message;
             console.error('Failed to open port:', error);
-            return;
+            return false;
         }
         this.startReaderLoop();
+        return true;
+    }
+
+    async disconnect () {
+        this.exitLoop = true;
+        if (this.device.port.readable) {
+            //The device is connected, we should try to close it gracefully
+            try {
+                this.reader.releaseLock();
+            } catch (error) {
+                console.error('Error releasing reader lock:', error);
+            }
+            try {
+                await this.device.port.close();
+                console.log('Port closed successfully for:', this.device.name);
+            } catch (error) {
+                console.error('Error closing port:', error);
+            }
+        }
+        if (this.main.currentDevice === this.device) this.main.currentDevice = null;
+        this.overlay = true;
+        this.connecting = false;
+        this.connectingError = null;
+        this.disconnected = false;
+        this.device.deviceElement.status = "disconnected";
     }
 }
 
