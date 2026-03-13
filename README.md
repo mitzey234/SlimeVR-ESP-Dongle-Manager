@@ -1,6 +1,9 @@
 # SlimeVR-ESP-Dongle-Manager
 This is an Electron application to help manage and control firmware on an ESP-based SlimeVR tracker dongle.
+
 ![alt text](images/Shot1.png?raw=true)
+
+This software is mostly intended to be used for managing [this firmware](https://github.com/mitzey234/SlimeVR-Receiver-ESP-Now).
 
 ## Download (Recommended)
 Most users should install the latest prebuilt release from GitHub:
