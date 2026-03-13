@@ -4,6 +4,7 @@ import SerialContainer from "./serialContainer.js";
 import { ESPLoader } from "../esptool.js";
 import parseFlashSize from "./parseFlashSize.js";
 import CustomFirmwareFlashModal from "./modals/customFirmwareFlashModal.js";
+import DongleFirmwareFlashModal from "./modals/dongleFirmwareFlashModal.js";
 
 class SerialManager extends Manager {
 
@@ -56,6 +57,7 @@ class SerialManager extends Manager {
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-1/2');
 
+        this.dongleFirmwareModal = new DongleFirmwareFlashModal(this);
         this.customFirmwareModal = new CustomFirmwareFlashModal(this);
     }
 

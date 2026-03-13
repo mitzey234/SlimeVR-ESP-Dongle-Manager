@@ -63,7 +63,7 @@ class SerialContainer {
         this.dongleFirmwareButton.classList.add('bg-purple-500', 'hover:bg-purple-700', 'active:bg-purple-900', 'text-white', 'py-2', 'px-4', 'rounded', "transition", "duration-200", "ease-in-out", "cursor-pointer", "outline-none", "ring-0", "hidden");
         this.dongleFirmwareButton.innerText = "Dongle Firmware Flash";
         this.dongleFirmwareButton.addEventListener('click', () => {
-            //TODO 
+            this.manager.dongleFirmwareModal.open();
         });
         this.buttonContainer.appendChild(this.dongleFirmwareButton);
 

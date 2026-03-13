@@ -14,7 +14,8 @@ let InvokeBinds = {
     readFile: "file:read",
     checkForFirmwareUpdates: "app:checkForFirmwareUpdates",
     getAvailableFiles: "app:getAvailableFiles",
-    getFirmwareArchive: "app:getFirmwareArchive"
+    getFirmwareArchive: "app:getFirmwareArchive",
+    getAvailableReleases: "app:getAvailableReleases"
 }
 
 class ElectronAPI {
@@ -105,6 +106,10 @@ class ElectronAPI {
 
     getFirmwareArchive(tag, board) {
         return window[API_NAME].getFirmwareArchive(tag, board);
+    }
+
+    getAvailableReleases() {
+        return window[API_NAME].getAvailableReleases();
     }
 }
 

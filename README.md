@@ -50,6 +50,20 @@ npm run package
 npm run make
 ```
 
+## TODO
+- [ ] Add support for custom firmware files (local file picker)
+- [ ] Add a modal for OTA updates for trackers
+- [ ] Add more information about individual trackers such as IMU type, ESP type, board type, etc. (this will require new firmware on the dongle to intercept some of the frames sent by the trackers)
+- [ ] Add a settings panel
+	- [ ] Baud rate settings
+	- [ ] User background settings
+	- [ ] Disable / enable infinite log history
+	- [ ] Change the max history of the logs
+	- [ ] Show / hide timestamps in terminal
+	- [ ] Use milliseconds since boot instead of time in terminal
+	- [ ] Clear firmware temporary files
+	- [ ] Setting that forces the program to allow flashing firmware anyway
+
 ## Credits
 This project uses/derives tooling and ideas from WebSerial_ESPTool by Jason2866:
 

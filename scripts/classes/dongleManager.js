@@ -60,6 +60,17 @@ class DongleManager extends Manager {
         this.terminal.element.classList.remove('w-full');
         this.terminal.element.classList.add('w-4/9');
 
+        //Force DFU mode button for when you can't get into the dongle for some reason
+        var forceDFUModeButton = document.createElement('button');
+        forceDFUModeButton.classList.add('px-4', 'py-2', 'bg-red-500', 'text-white', 'rounded', 'hover:bg-red-600', 'active:bg-red-700', 'cursor-pointer');
+        forceDFUModeButton.innerText = "Force DFU Mode";
+        forceDFUModeButton.addEventListener('click', async () => {
+            this.connecting = true;
+            await this.device.port.open({ baudRate: 115200 });
+            this.device.enterDFU();
+        });
+        this.connectingErrorCont.appendChild(forceDFUModeButton);
+
         //Modals
         this.pairedTrackersManager = new PairedTrackersManager(this);
         this.scanningEnvironmentModal = new ScanningEnvironment(this);
@@ -98,8 +109,8 @@ class DongleManager extends Manager {
     }
 
     async disconnect () {
-        this.sendCommand('scoff');
-        super.disconnect();
+        await this.sendCommand('scoff');
+        await super.disconnect();
         this.dongleContainer.clearPairedTrackers();
         this.dongleContainer.clearTrackers();
     }

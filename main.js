@@ -303,6 +303,16 @@ app.whenReady().then(async () => {
     }
   });
 
+  ipcMain.handle('app:getAvailableReleases', async (event) => {
+    try {
+      const releases = await updater.getAvailableReleases();
+      return releases;
+    } catch (err) {
+      console.error('Error getting available releases:', err);
+      return { error: err.message };
+    }
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
