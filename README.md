@@ -54,7 +54,6 @@ npm run make
 ```
 
 ## TODO
-- [ ] Add support for custom firmware files (local file picker)
 - [ ] Add a modal for OTA updates for trackers
 - [ ] Add more information about individual trackers such as IMU type, ESP type, board type, etc. (this will require new firmware on the dongle to intercept some of the frames sent by the trackers)
 - [ ] Add a settings panel
