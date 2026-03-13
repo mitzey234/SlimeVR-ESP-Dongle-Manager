@@ -1,4 +1,4 @@
-const Firmware = require("./firmware.js");
+const Firmware = require('./Firmware.js');
 
 const fs = require('fs');
 const path = require('path');
